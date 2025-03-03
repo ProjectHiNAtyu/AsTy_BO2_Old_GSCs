@@ -1,0 +1,123 @@
+MOAB()
+{
+	if(self.isMOAB == 0)
+	{
+		if(self.NoticeTextMode == 0)
+			self thread optionCalledMesage("MW3 M.O.A.B Kill Streak!", 1, "Press [{+frag}] + [{+actionslot 3}] for M.O.A.B.", (0, 1, 0), 8, 0);
+		else
+			self thread init_NotifySetText(0, 0, "MW3 M.O.A.B Kill Streak!", (1, 1, 1), 1, (0, 1, 0), 6, 1, "Press [{+frag}] + [{+actionslot 3}] for M.O.A.B.", (1, 1, 1), 1, (1, 1, 1));
+		self thread Monitor_MOAB();
+		self.isMOAB = 1;
+	}
+	else
+		self iPrintln("^1Caution ^7: ^3M.O.A.B is still unused.");
+}
+Monitor_MOAB()
+{
+	self endon("disconnect");
+	self endon("Start_MOAB");
+	for(;;)
+	{
+		if(self fragButtonPressed() && self actionSlotThreeButtonPressed())
+		{
+			self thread init_MOAB(1);
+			self notify("Start_MOAB");
+		}
+		wait 0.05;
+	}
+}
+init_MOAB(Notice)
+{
+	Location = init_LocationSelector(0, 1, 0, 0, 0);
+	if(Notice == 1)
+	{
+		if(level.NoticeMode == 0)
+			self iPrintln("^6M.O.A.B ^7: [^2Requested^7]");
+		else
+		{
+			if(level.AllNoticeTextMode == 0)
+				self thread optionCalledMesage("M.O.A.B is Incoming!", 0, "", (0, 1, 0), 6, 1);
+			else
+				self thread init_NotifySetText(1, 1, "M.O.A.B is Incoming!", (1, 1, 1), 1, (1, 0, 0), 2, 0);
+		}
+	}
+	
+	self.isMOAB = 0;
+	flightPath = init_FlightPath(Location, 0, 0, 17500, 0, 7000);
+	Start = flightPath["start"];
+	End = flightPath["end"];
+	Position = Location + (0, 0, 6920);
+	MOABAngle = VectorToAngles(flightPath["end"] - flightPath["start"]);
+	
+	MOAB = SpawnPlane(self, "script_model", Start);
+	MOAB setModel("veh_t6_air_v78_vtol_killstreak");
+	MOAB.angles = MOABAngle;
+	MOAB playLoopSound("mpl_lightning_flyover_boom");
+	MOAB endon("death");
+	MOAB thread Tag_PlayFX(0, level.fx_cuav_afterburner, 0, "tag_turret", 0.1, 0, 0, 25);
+	
+	Time = init_MoveSpeed(1000, Position, Start);
+	MOAB moveTo(Position, Time);
+	wait Time;
+	MOAB thread Bomb_MOAB(self);
+	MOAB moveTo(End, Time);
+	wait Time;
+	MOAB notify("stop_Tag_PlayFX");
+	MOAB delete();
+}
+Bomb_MOAB(Owner)
+{
+	Ground = GetGround();
+	Missile = Spawn("script_model", self.origin - (0, 0, 80));
+	Missile SetModel("projectile_sa6_missile_desert_mp");
+	Missile.angles = self.angles;
+	Missile.KillCamEnt = Missile;
+	Missile thread Origin_PlayFX(1, "maps/mp_maps/fx_mp_exp_rc_bomb", 0, 0, 0.1, (0, 0, 120));
+	
+	Target = Ground + (0, 0, 4000);
+	Time = init_MoveSpeed(800, Target, self.origin);
+	Missile MoveTo(Target, Time);
+	Missile RotatePitch(90, Time);
+	Missile init_PlaySound(0, "wpn_remote_missile_inc", 0);
+	wait Time;
+	
+	FinalTarget = Ground + (0, 0, 2000);
+	Time = init_MoveSpeed(800, FinalTarget, Missile.origin);
+	Missile MoveTo(FinalTarget, Time);
+	for(i = 0; i < 20; i++)
+	{
+		x = randomIntRange(-1500, 1500);
+		y = randomIntRange(-1500, 1500);
+		RocketTarget = Ground + (x, y, 0);
+		Missile thread DiffusionBomb_MOAB(RocketTarget, Time, Owner);	
+	}
+	wait Time;
+	
+	EarthQuake(0.6, 5, FinalTarget, 5000);
+	Missile thread Origin_PlayFX(1, "weapon/emp/fx_emp_explosion", 1, 0, 0, (0, 0, 0));
+	foreach(player in level.players)
+		player thread init_PlaySound(0, "wpn_emp_bomb", 0);
+	Missile RadiusDamage(Missile.origin, 100000, 100000, 100000, Owner);
+	Missile notify("stop_Origin_PlayFX");
+	wait 0.2;
+	Missile delete();
+}
+DiffusionBomb_MOAB(Target, Time, Owner)
+{
+	Rocket = Spawn("script_model", self.origin - (0, 0, 45));
+	Rocket SetModel("projectile_sidewinder_missile");
+	Rocket.angles = vectorToAngles(Target - Rocket.origin);
+	Rocket.KillCamEnt = Rocket;
+	
+	playFxOnTag(level.chopper_fx["damage"]["light_smoke"], Rocket, "tag_origin");
+	Rocket moveTo(Target, Time);
+	Rocket RotatePitch(30, Time);
+	wait Time;
+	
+	EarthQuake(0.4, 3, Rocket.origin, 400);
+	Rocket thread Origin_PlayFX(0, level.fx_u2_explode, 1, 0, 0, (0, 0, 0));
+	Rocket PlaySound(level.heli_sound["crash"]);
+	Rocket RadiusDamage(Rocket.origin, 350, 350, 350, Owner);
+	wait 0.4;
+	Rocket delete();
+}

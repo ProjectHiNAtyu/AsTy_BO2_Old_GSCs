@@ -1,0 +1,40 @@
+initNukeBullets()
+{
+	if (self.NukeBulletsOn == 0)
+	{
+		self.NukeBulletsOn = 1;
+		self notify("stop_NonFXExpBult");
+		self notify("stop_ExpBult");
+		self.ExpBult = 0;
+		self.NonFXExpBultOn = 0;
+		self thread doNukeBullets();
+		self iPrintlnbold("^5Nuke Bullets: ^2On");
+		self iPrintln("^3This Effect can use ^1Nuketown only");
+	}
+	else
+	{
+		self.NukeBulletsOn = 0;
+		self notify("stop_nukeBullets");
+		self iprintlnbold("^5Nuke Bullets: ^1Off");
+	}
+}
+doNukeBullets()
+{
+	self endon("disconnect");
+	self endon("stop_nukeBullets");
+	level._effect["fx_mp_nuked_final_explosion"] = loadfx("maps/mp_maps/fx_mp_nuked_final_explosion");
+	for(;;)
+	{
+		self waittill ("weapon_fired");
+		forward = self getTagOrigin("j_head");
+		end = vectorScale(anglestoforward(self getPlayerAngles()), 1000000);
+		ExpLocation = BulletTrace( forward, end, false, self )["position"];
+		playfx(level._effect["fx_mp_nuked_final_explosion"], ExpLocation);
+		RadiusDamage(ExpLocation, 3000, 3000, 3000, self);
+		foreach(p in level.players)
+		{
+			p playsound("amb_end_nuke");
+		}
+		wait 0.05;
+	}
+}

@@ -1,0 +1,333 @@
+/*
+
+Function名: MW2 Nuke Bomber
+コード製作者: AsTy
+サポート: Aggrry
+
+*/
+
+//=====[ 前提条件 / 短縮コード ]=====
+
+init()
+{
+   precacheshader("mp_hud_cluster_status");
+   precacheshader("emblem_bg_bo2_nuclear_killer");
+}
+
+createText( font, fontScale, text, point, relative, xOffset, yOffset, sort, hideWhenInMenu, alpha, color, glowAlpha, glowColor )
+{
+        textElem = createFontString(font, fontScale);
+        textElem setText(text);
+        textElem setPoint( point, relative, xOffset, yOffset );
+        textElem.sort = sort;
+        textElem.hideWhenInMenu = hideWhenInMenu;
+        textElem.alpha = alpha;
+        textElem.color = color;
+        textElem.glowAlpha = glowAlpha;
+        textElem.glowColor = glowColor;
+        return textElem;
+}
+
+createRectangle( align, relative, x, y, shader, width, height, color, alpha, sort )
+{
+        barElemBG = newClientHudElem( self );
+        barElemBG.elemType = "bar";
+        if ( !level.splitScreen )
+        {
+                barElemBG.x = -2;
+                barElemBG.y = -2;
+        }
+        barElemBG.width = width;
+        barElemBG.height = height;
+        barElemBG.align = align;
+        barElemBG.relative = relative;
+        barElemBG.xOffset = 0;
+        barElemBG.yOffset = 0;
+        barElemBG.children = [];
+        barElemBG.sort = sort;
+        barElemBG.color = color;
+        barElemBG.alpha = alpha;
+        barElemBG setParent( level.uiParent );
+        barElemBG setShader( shader, width , height );
+        barElemBG.hidden = false;
+        barElemBG setPoint(align,relative,x,y);
+        return barElemBG;
+}
+
+optionCalledMesage(titleWord, isNotify, notifyWord, color, time)
+{
+   optionMessage = spawnstruct();
+   optionMessage.titleText = titleWord;
+   if(isNotify == 1)
+   {
+      optionMessage.notifyText = notifyWord;
+   }
+   optionMessage.glowColor = color;
+   optionMessage.duration = time;
+   optionMessage.font = "objective";
+   optionMessage.hideWhenInMenu = false;
+   self thread maps\mp\gametypes\_hud_message::notifyMessage(optionMessage);
+}
+
+elemMoveX(time, input)
+{
+   self moveOverTime(time);
+   self.x = input;
+}
+
+elemFade(time, alpha)
+{
+   self fadeOverTime(time);
+   self.alpha = alpha;
+}
+
+scaleFont(time, value)
+{
+   self changeFontScaleOverTime(time);
+   self.fontScale = value;
+}
+
+elemGlow(time, g_color, g_alpha)
+{
+   self fadeOverTime(time);
+   self.glowColor = g_color;
+   self.Glowalpha = g_alpha;
+}
+
+//=====[ Nuke呼び出し ]=====
+
+initMW2Nuke()
+{
+   if(level.isMW2Nuke == 0)
+   {
+      self thread doMW2Nuke();
+      self iPrintln("^6MW2 Nuke ^7: [^2Requested^7]");
+      level.isMW2Nuke = 1;
+   }
+   else
+      self iPrintln("^3Nuclear warhead missile ^1is already incoming.");
+}
+
+//=====[ Nukeの流れ呼び出し ]=====
+
+doMW2Nuke()
+{
+   self thread startNukeMessage();
+   self thread waitNukePressed();
+}
+
+//=====[ Killsterak入手 ]=====
+
+startNukeMessage()
+{
+   self endon("disconnect");
+   self endon("stop_MW2Nuke_StartMessage");
+   self endon("end_MW2Nuke");
+
+   for(;;)
+   {
+      MessageNukeIcon = createRectangle("CENTER", "CENTER", -700, -180, "mp_hud_cluster_status", 100, 100, (1, 1, 1), 1, 1);
+      self.MessageNukeReady = self createText("default", 2, "MW2 Nuke Kill Streak!", "CENTER", "CENTER", -700, -150, 1, true, 1, (1, 1, 1), 1, (0, 1, 0));
+      self.MessageNukeHowTo = self createText("default", 1.3, "Press [{+frag}] for Tactical Nuke.", "CENTER", "CENTER", -700, -130, 1, true, 1, (1, 1, 1));
+
+      wait 0.05;
+
+      self PlaySound("wpn_remote_missile_inc");
+      MessageNukeIcon elemMoveX(0.3, 0);
+      self.MessageNukeReady elemMoveX(0.3, 0);
+      self.MessageNukeHowTo elemMoveX(0.3, 0);
+      
+      wait 1.5;
+      self PlaySound("wpn_remote_missile_fire_boost");
+
+      wait 5.5;
+
+      MessageNukeIcon elemMoveX(0.3, 700);
+      self.MessageNukeReady elemMoveX(0.3, 700);
+      self.MessageNukeHowTo elemMoveX(0.3, 700);
+
+      wait 0.3;
+
+      MessageNukeIcon destroy();
+      self.MessageNukeReady destroy();
+      self.MessageNukeHowTo destroy();
+
+      self notify("stop_MW2Nuke_StartMessage");
+   }
+}
+
+//=====[ 入力待機 ]=====
+
+waitNukePressed()
+{
+   self endon("disconnect");
+   self endon("stop_MW2Nuke_WaitTime");
+   self endon("end_MW2Nuke");
+   
+   self takeallweapons();
+   self giveWeapon("satchel_charge_mp", 0, false);
+   self setWeaponAmmoStock("satchel_charge_mp", 0);
+   self setWeaponAmmoClip("satchel_charge_mp", 0);
+
+   for(;;)
+   {
+      if(self FragButtonPressed())
+      {
+         wait 0.7;
+         self thread nukeMissileThread();
+         foreach(player in level.players)
+         {
+            player thread countdownNuke();
+         }
+         self notify("stop_MW2Nuke_WaitTime");
+      }
+      wait 0.05;
+   }
+}
+
+//=====[ カウントダウン ]=====
+
+countdownNuke()
+{
+   self endon("disconnect");
+   self endon("stop_MW2Nuke_Countdown");
+   self endon("end_MW2Nuke");
+   
+   self thread optionCalledMesage("^3Nuclear Missile ^1Inbound!!", 1, "^0Anymore us of fate was exhausted...", (1, 0, 0.502), 7);
+
+   for(num = 10; num > 0; num--)
+   {
+      self PlaySoundToPlayer("wpn_semtex_alert", self);
+      self.NukeCountdown = self createText("hudbig", 10, num, "CENTER", "CENTER", 0, 0, 1, true, 0, (1, 1, 1), 1, (1, 0.5, 0.2));
+      self.NukeCountdown elemFade(0.1, 1);
+      self.NukeCountdown scaleFont(0.3, 2.5);
+      wait 1;
+      if(num > 1)
+      {
+         self.NukeCountdown destroy();
+      }
+   }
+   
+   wait 0.7;
+   self.NukeCountdown elemFade(0.3, 0);
+   wait 0.3;
+   self.NukeCountdown destroy();
+   self PlaySoundToPlayer("wpn_c4_activate_plr", self);
+   self PlaySoundToPlayer("evt_helicopter_spin_start", self);
+   self PlaySoundToPlayer("wpn_a10_drop_chaff", self);
+   self notify("stop_MW2Nuke_Countdown");
+}
+
+//=====[ ミサイル関連コード ]=====
+
+nukeMissileThread()
+{
+   self endon("disconnect");
+   self endon("stop_MW2Nuke_MissileThread");
+   self endon("end_MW2Nuke");
+   
+   MissileLocation = self.origin + VectorScale(AnglesToForward((0, self getPlayerAngles()[1], self getPlayerAngles()[2])), 4000);
+   
+   for(;;)
+   {
+      for(i = 0; i <= 6; i++)
+      {
+         x = randomIntRange(-500, 500);
+         y = randomIntRange(-500, 500);
+         z = randomIntRange(20000, 24000);
+
+         level.nukeMissile[i] = spawn("script_model", MissileLocation + (x, y, z));
+         level.nukeMissile[i] setModel("projectile_sa6_missile_desert_mp");
+         level.nukeMissile[i].angles = (90, 90, 90);
+         level.nukeMissile[i] thread MW2NukeFireEffect();
+      }
+      
+      wait 0.05;
+      
+      for(i = 0; i <= 6; i++)
+      {
+         level.nukeMissile[i] moveto(level.nukeMissile[i].origin + (0, 0, -18000), 10.5);
+      }
+
+      wait 10.6;
+
+      foreach(nukeMissiles in level.nukeMissile)
+      {
+         nukeMissiles notify("stop_MW2Nuke_FireEffect");
+         level._effect["emp_flash"] = loadfx("weapon/emp/fx_emp_explosion");
+         playfx(level._effect["emp_flash"], nukeMissiles.origin);
+         earthquake(0.6, 7, nukeMissiles.origin, 12345);
+      }
+
+      foreach(player in level.players)
+      {
+         player playsound("wpn_emp_bomb");
+      }
+      
+      wait 0.5;
+      setDvar("timescale", "0.9");
+      wait 0.6;
+      setDvar("timescale", "0.8");
+      wait 0.7;
+      setDvar("timescale", "0.7");
+      wait 0.8;
+      setDvar("timescale", "0.6");
+
+      for(i = 3; i <= 6; i++)
+      {
+         level.nukeMissile[i] RadiusDamage(level.nukeMissile[i].origin, 20000, 20000, 20000, self);
+      }
+
+      foreach(nukeMissiles in level.nukeMissile)
+      {
+         nukeMissiles delete();
+      }
+
+      wait 0.9;
+      setDvar("timescale", "0.5");
+      
+      foreach(player in level.players)
+      {
+         player suicide();
+      }
+      
+      wait 0.1;
+      setDvar("timescale", "0.6");
+      wait 0.1;
+      setDvar("timescale", "0.7");
+      wait 0.1;
+      setDvar("timescale", "0.8");
+      wait 0.1;
+      setDvar("timescale", "0.9");
+      wait 0.1;
+      setDvar("timescale", "1");
+      
+      self thread nukeGameEnd();
+      self notify("stop_MW2Nuke_MissileThread");
+   }
+}
+
+MW2NukeFireEffect()
+{
+   self endon("disconnect");
+   self endon("stop_MW2Nuke_FireEffect");
+   self endon("end_MW2Nuke");
+   
+   level._effect["torch"] = loadfx("maps/mp_maps/fx_mp_exp_rc_bomb");
+   for(;;)
+   {
+      PlayFX(level._effect["torch"], self.origin + (0, 0, 120));
+      wait 0.1;
+   }
+}
+
+//=====[ Nuke終了 ]=====
+
+nukeGameEnd()
+{
+   foreach(player in level.players)
+   {
+      player notify("end_MW2Nuke");
+   }
+   level thread maps/mp/gametypes/_globallogic::forceend();
+}

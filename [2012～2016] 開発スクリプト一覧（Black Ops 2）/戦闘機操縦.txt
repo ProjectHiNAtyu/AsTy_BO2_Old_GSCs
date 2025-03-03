@@ -1,0 +1,699 @@
+
+/*
+
+Function名:
+Ace Combat, Spawn Flyable Jet
+
+Credit:
+コード本体製作者 = AsTy
+コードの参考元 (Base) = Shark
+
+呼び出し方:
+http://gyazo.com/5b86a7180d37c1e2055277171d2db140
+
+動画:
+https://www.youtube.com/watch?v=qZ_MWIYu4ug&list=UUSYf-Y5BABtiOn9kjneQ56g
+
+*/
+
+//----------------
+//----------------
+//----------------
+//----------------
+//----------------
+//===< 前提条件コード >===
+//----------------
+//----------------
+//----------------
+//----------------
+//----------------
+
+drawText(text, font, fontScale, x, y, color, alpha, glowColor, glowAlpha, sort)
+{
+	hud = self createFontString(font, fontScale);
+	hud setText(text);
+	hud.x = x;
+	hud.y = y;
+	hud.color = color;
+	hud.alpha = alpha;
+	hud.glowColor = glowColor;
+	hud.glowAlpha = glowAlpha;
+	hud.sort = sort;
+	hud.alpha = alpha;
+	return hud;
+}
+drawBar(color, width, height, align, relative, x, y)
+{
+	bar = createBar(color, width, height, self);
+	bar setPoint(align, relative, x, y);
+	bar.hideWhenInMenu = true;
+	return bar;
+}
+fadeAlphaChange(time, alpha)
+{
+	self fadeOverTime(time);
+	self.alpha = alpha;
+}
+playerAnglesToForward(player, distance)
+{
+	return player.origin + VectorScale(AnglesToForward(player getPlayerAngles(), distance));
+}
+traceBulletJet(traceDistance, traceReturn, detectPlayers)
+{
+	if (!isDefined(traceDistance))
+		traceDistance = 10000000;
+
+	if (!isDefined(traceReturn))
+		traceReturn = "position";
+
+	if (!isDefined(detectPlayers))
+		detectPlayers = false;
+
+	return bulletTrace(self getEye(), self getEye() + VectorScale(AnglesToForward(self getPlayerAngles()), traceDistance), detectPlayers, self)[traceReturn];
+}
+
+//===< 全員乗れるけど1機のみ >===
+
+switchFJetModel(code, name)
+{
+	level.FJetModel = code;
+	self iPrintln("^3Set Jet's Model to ^6" + name);
+	level.FJetMCheck = 1;
+	self changeFJetTPR();
+}
+changeFJetTPR()
+{
+	if(level.FJetModel == "veh_t6_air_a10f_alt" || level.FJetModel == "veh_t6_air_v78_vtol_killstreak")
+	{
+		setDvar("cg_thirdPersonRange", "700");
+	}
+	else if(level.FJetModel == "veh_t6_air_fa38_killstreak" || level.FJetModel == "veh_t6_drone_pegasus_mp")
+	{
+		setDvar("cg_thirdPersonRange", "500");
+	}
+	else if(level.FJetModel == "veh_t6_drone_uav")
+	{
+		setDvar("cg_thirdPersonRange", "400");
+	}
+}
+setFJetMatb()
+{
+	self switchFJetModel("veh_t6_air_a10f_alt", "A10 Thunderbolt");
+}
+setFJetMharr()
+{
+	self switchFJetModel("veh_t6_air_fa38_killstreak", "Harrier");
+}
+setFJetMuav()
+{
+	self switchFJetModel("veh_t6_drone_uav", "UAV");
+}
+setFJetMstb()
+{
+	self switchFJetModel("veh_t6_drone_pegasus_mp", "Stealth Bomber");
+}
+setFJetMvtol()
+{
+	self switchFJetModel("veh_t6_air_v78_vtol_killstreak", "VTOL Warship");
+}
+initFlyableJet()
+{
+	self endon("stop_threeFJet");
+
+	if(level.JetSpawned == 0)
+	{
+		level.JetSpawned = 1;
+		if(level.FJetMCheck == 0)
+		{
+			self setFJetMatb();
+		}
+
+		self.FJet["setOrigin"] = self.origin + VectorScale(AnglesToForward((0, self getPlayerAngles()[1], self getPlayerAngles()[2])), 260);
+		level.FJetEntity = spawn("script_model", self.FJet["setOrigin"] + (0, 0, 70));
+		level.FJetEntity.angles = (0, 10, 0);
+		level.FJetEntity setModel(level.FJetModel);
+
+		self iPrintlnbold("^3Flyable Jet ^2Spawned");
+		foreach(player in level.players)
+			player thread doFlyableJet();
+	}
+	else
+	{
+		self iPrintlnbold("^3Flyable Jet is ^1already Spawned");
+	}
+}
+doFlyableJet()
+{
+	self endon("disconnect");
+	self endon("stop_doFJet");
+	self endon("stop_threeFJet");
+
+	for(;;)
+	{
+		self.FJetRaidInfo destroy();
+
+		if(distance(self.origin, level.FJetEntity.origin) < 170)
+		{
+			self.FJetRaidInfo = self createFontString("hudbig", 1.8);
+			self.FJetRaidInfo setPoint("TOP", "TOP", 0, 50);
+			self.FJetRaidInfo setText("^3Press [{+usereload}] to ^1Ride on Jet");
+
+			if(self useButtonPressed())
+			{
+				self disableWeapons();
+				self detachAll();
+				self hide();
+				self enableInvulnerability();
+				self setclientthirdperson(1);
+
+				self thread moveFlyableJet();
+				self thread doWeapFJet();
+				self thread stopFlyableJet();
+				self thread exitFlyableJet();
+				self thread doFJCInfoOn();
+
+				foreach(player in level.players)
+					player notify("stop_doFJet");
+			}
+		}
+		wait 0.05;
+	}
+}
+doFJCInfoOn()
+{
+	if (self.initFJCInfoOn == 0)
+	{
+		self.FJCInfoOn = self drawText("[{+attack}] ^2Accel\n[{+smoke}] Drop Carepackage\n[{+switchseat}] ^5Change Weapon\n[{+speed_throw}] Fire Weapon\n[{+frag}] Bomblet to Under\n[{+stance}] ^1Exit\n[{+melee}] Delete Jet", "objective", 1.5, -280, 250, (1, 1, 1), 0, (0, 0, 1), 1, 1);
+		self.initFJCInfoOn = 1;
+	}
+	self.FJCInfoOn fadeAlphaChange(.2, 1);
+
+	foreach(player in level.players)
+		player notify("stop_doFJet");
+}
+doFJCInfoOff()
+{
+	self.FJCInfoOn fadeAlphaChange(.2, 0);
+}
+moveFlyableJet()
+{
+	self endon("disconnect");
+	self endon("stop_driveFJet");
+
+	self.FJetRaidInfo destroy();
+	self changeFJetTPR();
+
+	self setOrigin(((level.FJetEntity.origin) + (AnglesToForward(level.FJetEntity.angles) * 20) + (0, 0, 3)));
+	self setPlayerAngles(level.FJetEntity.angles + (0, 0, 0));
+	self PlayerLinkTo(level.FJetEntity);
+
+	self.FJetSBar = drawBar((1, 1, 1), 250, 7, "", "", 0, 170);
+	level.FJetSpeed = 0;
+	jetTrace = undefined;
+	newJetAngles = undefined;
+
+	for(;;)
+	{
+		jetTrace = playerAnglesToForward(self, 150 + level.FJetSpeed);
+		level.FJetEntity rotateTo(self getPlayerAngles(), 0.2);
+
+		if (self attackButtonPressed())
+		{
+			if(level.FJetSpeed < 0)
+				level.FJetSpeed = 0;
+
+			if(level.FJetSpeed < 250)
+				level.FJetSpeed += 0.5;
+
+			level.FJetEntity moveTo(jetTrace, 0.15);
+		}
+		else
+		{
+			if(level.FJetSpeed > 0)
+			{
+				newJetAngles = self getPlayerAngles();
+				level.FJetSpeed -= 2;
+				level.FJetEntity moveTo(jetTrace, 0.3);
+			}
+		}
+
+		self.FJetSBar updateBar(level.FJetSpeed / 250);
+		wait 0.05;
+	}
+}
+doWeapFJet()
+{
+	self endon("disconnect");
+	self endon("stop_weapSFJet");
+
+	self changeFJetweap();
+
+	self.FJetNowWeap = self drawText("^3Armament: ^5" + level.FJetWeapName, "objective", 2, 0, 330, (1, 1, 1), 0, (1, 0, 0), 1, 1);
+	self.FJetNowWeap fadeAlphaChange(.2, 1);
+
+	for(;;)
+	{
+		if(self changeSeatButtonPressed())
+		{
+			self changeFJetweap();
+			self.FJetNowWeap destroyElem();
+			self.FJetNowWeap = self drawText("^3Armament: ^5" + level.FJetWeapName, "objective", 2, 0, 330, (1, 1, 1), 0, (1, 0, 0), 1, 1);
+			self.FJetNowWeap fadeAlphaChange(.2, 1);
+			wait 0.2;
+		}
+		if(self adsButtonPressed())
+		{
+			MagicBullet(level.FJetWeapType, level.FJetEntity getTagOrigin("tag_origin") + (-180, 250, -100), self traceBulletJet(), self);
+			MagicBullet(level.FJetWeapType, level.FJetEntity getTagOrigin("tag_origin") + (180, 250, -100), self traceBulletJet(), self);
+			wait 0.1;
+		}
+		if(self fragButtonPressed())
+		{
+			MagicBullet(level.FJetWeapType, level.FJetEntity.origin + (0, 0, -90), level.FJetEntity.origin + (0, 0, -10000), self);
+			wait 0.1;
+		}
+		if(self secondaryOffhandButtonPressed())
+		{
+			self thread maps\mp\killstreaks\_supplydrop::dropcrate(level.FJetEntity.origin + (0, 0, -20), self.angles, "supplydrop_mp", self, self.team, self.killcament, undefined, undefined, undefined);
+			self iPrintln("^3Carepackage ^2Droped.");
+			wait 0.5;
+		}
+		wait 0.05;
+	}
+}
+changeFJetweap()
+{
+	if(level.FJetWeapon == 0)
+	{
+		level.FJetWeapon = 1;
+		level.FJetWeapType = "smaw_mp";
+		level.FJetWeapName = "SMAW";
+	}
+	else if(level.FJetWeapon == 1)
+	{
+		level.FJetWeapon = 2;
+		level.FJetWeapType = "ai_tank_drone_rocket_mp";
+		level.FJetWeapName = "A.G.R Rocket";
+	}
+	else if(level.FJetWeapon == 2)
+	{
+		level.FJetWeapon = 3;
+		level.FJetWeapType = "straferun_rockets_mp";
+		level.FJetWeapName = "Warthog Rockets";
+	}
+	else if(level.FJetWeapon == 3)
+	{
+		level.FJetWeapon = 4;
+		level.FJetWeapType = "remote_missile_bomblet_mp";
+		level.FJetWeapName = "Mortar Missile Burner";
+	}
+	else if(level.FJetWeapon == 4)
+	{
+		level.FJetWeapon = 5;
+		level.FJetWeapType = "missile_swarm_projectile_mp";
+		level.FJetWeapName = "Swarm";
+	}
+	else if(level.FJetWeapon == 5)
+	{
+		level.FJetWeapon = 0;
+		level.FJetWeapType = "remote_mortar_missile_mp";
+		level.FJetWeapName = "Loadstar";
+	}
+}
+stopFlyableJet()
+{
+	self endon("disconnect");
+	self endon("stop_offRaidFJet");
+
+	for(;;)
+	{
+		if(self stanceButtonPressed())
+		{
+			self notify("stop_driveFJet");
+			self notify("stop_weapSFJet");
+			self notify("stop_oneExitFJet");
+
+			level.FJetSpeed = 0;
+			setDvar("cg_thirdPersonRange", "100");
+
+			self.FJetSBar destroyElem();
+			self.FJetNowWeap destroyElem();
+			self unlink();
+			self enableWeapons();
+			self show();
+			self setClientThirdPerson(0);
+			self disableInvulnerability();
+			self thread doFJCInfoOff();
+
+			foreach(player in level.players)
+				player thread doFlyableJet();
+			self notify("stop_offRaidFJet");
+		}
+		wait 0.05;
+	}
+}
+exitFlyableJet()
+{
+	self endon("disconnect");
+	self endon("stop_oneExitFJet");
+
+	for(;;)
+	{
+		if(self meleeButtonPressed())
+		{
+			self notify("stop_driveFJet");
+			self notify("stop_weapSFJet");
+			self notify("stop_offRaidFJet");
+
+			level.FJetEntity delete();
+			level.JetSpawned = 0;
+			level.FJetSpeed = 0;
+			setDvar("cg_thirdPersonRange", "100");
+
+			self.FJetSBar destroyElem();
+			self.FJetNowWeap destroyElem();
+			self unlink();
+			self enableWeapons();
+			self show();
+			self setClientThirdPerson(0);
+			self disableInvulnerability();
+			self thread doFJCInfoOff();
+
+			foreach(player in level.players)
+			{
+				player notify("stop_threeFJet");
+			}
+			self notify("stop_oneExitFJet");
+		}
+		wait 0.05;
+	}
+}
+
+//----------------
+//----------------
+//----------------
+//----------------
+//----------------
+//===< self用 >===
+//----------------
+//----------------
+//----------------
+//----------------
+//----------------
+
+switchFJetModelMe(code, name)
+{
+	self.FJetModel = code;
+	self iPrintln("^3Set Jet's Model to ^6" + name);
+	self.FJetMCheck = 1;
+	self changeFJetTPRMe();
+}
+changeFJetTPRMe()
+{
+	if(self.FJetModel == "veh_t6_air_a10f_alt" || self.FJetModel == "veh_t6_air_v78_vtol_killstreak")
+	{
+		setDvar("cg_thirdPersonRange", "700");
+	}
+	else if(self.FJetModel == "veh_t6_air_fa38_killstreak" || self.FJetModel == "veh_t6_drone_pegasus_mp")
+	{
+		setDvar("cg_thirdPersonRange", "500");
+	}
+	else if(self.FJetModel == "veh_t6_drone_uav")
+	{
+		setDvar("cg_thirdPersonRange", "400");
+	}
+}
+setFJetMatbMe()
+{
+	self switchFJetModelMe("veh_t6_air_a10f_alt", "A10 Thunderbolt");
+}
+setFJetMharrMe()
+{
+	self switchFJetModelMe("veh_t6_air_fa38_killstreak", "Harrier");
+}
+setFJetMstbMe()
+{
+	self switchFJetModelMe("veh_t6_drone_pegasus_mp", "Stealth Bomber");
+}
+initFlyableJetMe()
+{
+	self endon("stop_threeFJetMe");
+
+	if(self.JetSpawned == 0)
+	{
+		self.JetSpawned = 1;
+		if(self.FJetMCheck == 0)
+		{
+			self setFJetMatbMe();
+		}
+
+		self.FJet["setOrigin"] = self.origin + VectorScale(AnglesToForward((0, self getPlayerAngles()[1], self getPlayerAngles()[2])), 260);
+		self.FJetEntity = spawn("script_model", self.FJet["setOrigin"] + (0, 0, 70));
+		self.FJetEntity.angles = (0, 10, 0);
+		self.FJetEntity setModel(self.FJetModel);
+
+		self iPrintlnbold("^3Flyable Jet ^2Spawned");
+		self thread doFlyableJetMe();
+	}
+	else
+	{
+		self iPrintlnbold("^3Flyable Jet is ^1already Spawned");
+	}
+}
+doFlyableJetMe()
+{
+	self endon("disconnect");
+	self endon("stop_doFJetMe");
+	self endon("stop_threeFJetMe");
+
+	for(;;)
+	{
+		self.FJetRaidInfoMe destroy();
+
+		if(distance(self.origin, self.FJetEntity.origin) < 170)
+		{
+			self.FJetRaidInfoMe = self createFontString("hudbig", 1.8);
+			self.FJetRaidInfoMe setPoint("TOP", "TOP", 0, 50);
+			self.FJetRaidInfoMe setText("^3Press [{+usereload}] to ^1Ride on Jet");
+
+			if(self useButtonPressed())
+			{
+				self disableWeapons();
+				self detachAll();
+				self hide();
+				self enableInvulnerability();
+				self setclientthirdperson(1);
+
+				self thread moveFlyableJetMe();
+				self thread doWeapFJetMe();
+				self thread stopFlyableJetMe();
+				self thread exitFlyableJetMe();
+				self thread doFJCInfoOnMe();
+			}
+		}
+		wait 0.05;
+	}
+}
+doFJCInfoOnMe()
+{
+	if (self.initFJCInfoOnMe == 0)
+	{
+		self.FJCInfoOnMe = self drawText("[{+attack}] ^2Accel\n[{+smoke}] Drop Carepackage\n[{+switchseat}] ^5Change Weapon\n[{+speed_throw}] Fire Weapon\n[{+frag}] Bomblet to Under\n[{+stance}] ^1Exit\n[{+melee}] Delete Jet", "objective", 1.5, -280, 250, (1, 1, 1), 0, (0, 0, 1), 1, 1);
+		self.initFJCInfoOnMe = 1;
+	}
+	self.FJCInfoOnMe fadeAlphaChange(.2, 1);
+
+	self notify("stop_doFJetMe");
+}
+doFJCInfoOffMe()
+{
+	self.FJCInfoOnMe fadeAlphaChange(.2, 0);
+}
+moveFlyableJetMe()
+{
+	self endon("disconnect");
+	self endon("stop_driveFJetMe");
+
+	self.FJetRaidInfoMe destroy();
+	self changeFJetTPRMe();
+
+	self setOrigin(((self.FJetEntity.origin) + (AnglesToForward(self.FJetEntity.angles) * 20) + (0, 0, 3)));
+	self setPlayerAngles(self.FJetEntity.angles + (0, 0, 0));
+	self PlayerLinkTo(self.FJetEntity);
+
+	self.FJetSBarMe = drawBar((1, 1, 1), 250, 7, "", "", 0, 170);
+	self.FJetSpeed = 0;
+	jetTrace = undefined;
+	newJetAngles = undefined;
+
+	for(;;)
+	{
+		jetTrace = playerAnglesToForward(self, 150 + self.FJetSpeed);
+		self.FJetEntity rotateTo(self getPlayerAngles(), 0.2);
+
+		if (self attackButtonPressed())
+		{
+			if(self.FJetSpeed < 0)
+				self.FJetSpeed = 0;
+
+			if(self.FJetSpeed < 250)
+				self.FJetSpeed += 0.5;
+
+			self.FJetEntity moveTo(jetTrace, 0.15);
+		}
+		else
+		{
+			if(self.FJetSpeed > 0)
+			{
+				newJetAngles = self getPlayerAngles();
+				self.FJetSpeed -= 2;
+				self.FJetEntity moveTo(jetTrace, 0.3);
+			}
+		}
+
+		self.FJetSBarMe updateBar(self.FJetSpeed / 250);
+		wait 0.05;
+	}
+}
+doWeapFJetMe()
+{
+	self endon("disconnect");
+	self endon("stop_weapSFJetMe");
+
+	self changeFJetweapMe();
+
+	self.FJetNowWeapMe = self drawText("^3Armament: ^5" + self.FJetWeapName, "objective", 2, 0, 330, (1, 1, 1), 0, (1, 0, 0), 1, 1);
+	self.FJetNowWeapMe fadeAlphaChange(.2, 1);
+
+	for(;;)
+	{
+		if(self changeSeatButtonPressed())
+		{
+			self changeFJetweapMe();
+			self.FJetNowWeapMe destroyElem();
+			self.FJetNowWeapMe = self drawText("^3Armament: ^5" + self.FJetWeapName, "objective", 2, 0, 330, (1, 1, 1), 0, (1, 0, 0), 1, 1);
+			self.FJetNowWeapMe fadeAlphaChange(.2, 1);
+			wait 0.2;
+		}
+		if(self adsButtonPressed())
+		{
+			MagicBullet(self.FJetWeapType, self.FJetEntity getTagOrigin("tag_origin") + (-180, 250, -100), self traceBulletJet(), self);
+			MagicBullet(self.FJetWeapType, self.FJetEntity getTagOrigin("tag_origin") + (180, 250, -100), self traceBulletJet(), self);
+			wait 0.1;
+		}
+		if(self fragButtonPressed())
+		{
+			MagicBullet(self.FJetWeapType, self.FJetEntity.origin + (0, 0, -90), self.FJetEntity.origin + (0, 0, -10000), self);
+			wait 0.1;
+		}
+		if(self secondaryOffhandButtonPressed())
+		{
+			self thread maps\mp\killstreaks\_supplydrop::dropcrate(self.FJetEntity.origin + (0, 0, -20), self.angles, "supplydrop_mp", self, self.team, self.killcament, undefined, undefined, undefined);
+			self iPrintln("^3Carepackage ^2Droped.");
+			wait 0.5;
+		}
+		wait 0.05;
+	}
+}
+changeFJetweapMe()
+{
+	if(self.FJetWeapon == 0)
+	{
+		self.FJetWeapon = 1;
+		self.FJetWeapType = "smaw_mp";
+		self.FJetWeapName = "SMAW";
+	}
+	else if(self.FJetWeapon == 1)
+	{
+		self.FJetWeapon = 2;
+		self.FJetWeapType = "ai_tank_drone_rocket_mp";
+		self.FJetWeapName = "A.G.R Rocket";
+	}
+	else if(self.FJetWeapon == 2)
+	{
+		self.FJetWeapon = 3;
+		self.FJetWeapType = "straferun_rockets_mp";
+		self.FJetWeapName = "Warthog Rockets";
+	}
+	else if(self.FJetWeapon == 3)
+	{
+		self.FJetWeapon = 4;
+		self.FJetWeapType = "remote_missile_bomblet_mp";
+		self.FJetWeapName = "Mortar Missile Burner";
+	}
+	else if(self.FJetWeapon == 4)
+	{
+		self.FJetWeapon = 5;
+		self.FJetWeapType = "missile_swarm_projectile_mp";
+		self.FJetWeapName = "Swarm";
+	}
+	else if(self.FJetWeapon == 5)
+	{
+		self.FJetWeapon = 0;
+		self.FJetWeapType = "remote_mortar_missile_mp";
+		self.FJetWeapName = "Loadstar";
+	}
+}
+stopFlyableJetMe()
+{
+	self endon("disconnect");
+	self endon("stop_offRaidFJetMe");
+
+	for(;;)
+	{
+		if(self stanceButtonPressed())
+		{
+			self notify("stop_driveFJetMe");
+			self notify("stop_weapSFJetMe");
+			self notify("stop_oneExitFJetMe");
+
+			self.FJetSpeed = 0;
+			setDvar("cg_thirdPersonRange", "100");
+
+			self.FJetSBarMe destroyElem();
+			self.FJetNowWeapMe destroyElem();
+			self unlink();
+			self enableWeapons();
+			self show();
+			self setClientThirdPerson(0);
+			self disableInvulnerability();
+			self thread doFJCInfoOffMe();
+
+			self thread doFlyableJetMe();
+			self notify("stop_offRaidFJetMe");
+		}
+		wait 0.05;
+	}
+}
+exitFlyableJetMe()
+{
+	self endon("disconnect");
+	self endon("stop_oneExitFJetMe");
+
+	for(;;)
+	{
+		if(self meleeButtonPressed())
+		{
+			self notify("stop_driveFJetMe");
+			self notify("stop_weapSFJetMe");
+			self notify("stop_offRaidFJetMe");
+
+			self.FJetEntity delete();
+			self.JetSpawned = 0;
+			self.FJetSpeed = 0;
+			setDvar("cg_thirdPersonRange", "100");
+
+			self.FJetSBarMe destroyElem();
+			self.FJetNowWeapMe destroyElem();
+			self unlink();
+			self enableWeapons();
+			self show();
+			self setClientThirdPerson(0);
+			self disableInvulnerability();
+			self thread doFJCInfoOffMe();
+			self notify("stop_threeFJetMe");
+			self notify("stop_oneExitFJetMe");
+		}
+		wait 0.05;
+	}
+}

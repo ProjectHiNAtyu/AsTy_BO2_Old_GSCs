@@ -1,0 +1,181 @@
+/*
+
+[ English ]
+
+Function name : "Ray Gun Mark II"
+Mod Creator : AsTy
+Code Base : from. "Ray Gun"
+
+< Comment >
+This mod is Zombie's special weapon "Ray Gun Mark II" remaked.
+Changed some code on Ray Gun.
+Please have fun! :D
+
+==============================
+
+[ 日本語 ]
+
+チート名 : 「Ray Gun Mark II」
+Mod製作者 : AsTy
+コードの土台 : 「レイガン」より
+
+< コメント >
+このModはゾンビのRay Gun Mark IIをリメイクしたものです。
+再現ではなく、リメイクですのでAsTyの勝手な妄想で色々付け足してます。
+どうぞ楽しんでお使いください。
+
+*/
+
+//=====[ 前提条件 / 短縮コード ]=====
+
+//武器譲渡
+
+initGiveWeap(code, name, camo, enab)
+{
+   if(camo == 0)
+   {
+      self giveWeapon(code, 0, false);
+   }
+   else
+   {
+      self giveWeapon(code, 0, true(camo, 0, 0, 0, 0));
+   }
+
+   self switchToWeapon(code);
+   self givemaxammo(code);
+   self setWeaponAmmoClip(code, weaponClipSize(self getCurrentWeapon()));
+
+   if(enab == 1)
+   {
+      self iPrintlnbold("^6Give Weapon to ^2" + name);
+   }
+}
+
+//Typewriterメッセージカスタム表示
+
+optionCalledMesage(titleWord, isNotify, notifyWord, color, time)
+{
+   optionMessage = spawnstruct();
+   optionMessage.titleText = titleWord;
+   if(isNotify == 1)
+   {
+      optionMessage.notifyText = notifyWord;
+   }
+   optionMessage.glowColor = color;
+   optionMessage.duration = time;
+   optionMessage.font = "objective";
+   optionMessage.hideWhenInMenu = false;
+   self thread maps\mp\gametypes\_hud_message::notifyMessage(optionMessage);
+}
+
+//着弾地点の計算
+
+traceBullet()
+{
+   return bulletTrace(self getEye(), self getEye()+vectorScale(anglesToForward(self getPlayerAngles()), 1000000), false, self)["position"];
+}
+
+//=====[ 呼び出し / スイッチ ]=====
+
+initRaygunM2()
+{
+   if(self.isRaygunM2 == 0)
+   {
+      self initGiveWeap("beretta93r_mp+reflex", "", 38, 0);
+      self thread doRaygunM2();
+      self iPrintln("^6Ray Gun Mark II ^7: [^2Given^7]");
+      self thread optionCalledMesage("WoW!! ^1Red Color...?", 1, "^7Upgraded Weapon LoL", (1, 0.502, 0.251), 8);
+      self.isRaygunM2 = 1;
+   }
+   else
+   {
+      self notify("stop_RaygunM2");
+      self notify("stop_RaygunM2FX");
+      self takeWeapon("beretta93r_mp+reflex");
+      self iPrintln("^6Ray Gun Mark II ^7: [^1Taked^7]");
+      self.isRaygunM2 = 0;
+   }
+}
+
+//=====[ 本体 ]=====
+
+//発砲→メインFnction呼び出し
+
+doRaygunM2()
+{
+   self endon("disconnect");
+   self endon("stop_RaygunM2");
+   
+   self thread waitRaygunM2Suicide();
+
+   for(;;)
+   {
+      self waittill("weapon_fired");
+      if(self getCurrentWeapon() == "beretta93r_mp+reflex")
+      {
+         self thread mainRaygunM2();
+      }
+   }
+}
+
+//メイン動作
+      
+mainRaygunM2()
+{
+   raygunM2Explode = loadfx("weapon/bouncing_betty/fx_betty_destroyed");
+   raygunM2Explode2 = loadfx("weapon/tracer/fx_tracer_flak_single_noExp");
+   weapOrigin = self getTagOrigin("tag_weapon_right");
+   target = self traceBullet();
+
+   raygunM2Missile = spawn("script_model", weapOrigin);
+   raygunM2Missile setModel("projectile_at4");
+   raygunM2Missile.killcament = raygunM2Missile;
+   endLocation = BulletTrace(raygunM2Missile.origin, target, false, self)["position"];
+   raygunM2Missile.angles = VectorToAngles(endLocation - raygunM2Missile.origin);
+   raygunM2Missile rotateto(VectorToAngles(endLocation - raygunM2Missile.origin), 0.001);
+
+   raygunM2Missile moveto(endLocation, 0.3);
+   self thread raygunM2Effect(raygunM2Missile, endLocation);
+   wait 0.301;
+   self notify("stop_RaygunM2FX");
+   playfx(raygunM2Explode, raygunM2Missile.origin);
+   playfx(raygunM2Explode2, raygunM2Missile.origin); //level.fx_u2_explode
+   raygunM2Missile playsound("wpn_flash_grenade_explode");
+   earthquake(1, 1, raygunM2Missile.origin, 300);
+   raygunM2Missile RadiusDamage(raygunM2Missile.origin, 270, 270, 270, self);
+   raygunM2Missile delete();
+}
+
+//赤のトーチEffect移動コード
+
+raygunM2Effect(object, target)
+{
+   self endon("disconnect");
+   self endon("stop_RaygunM2FX_Final");
+   self endon("stop_RaygunM2");
+   
+   raygunM2Laser = loadFX("misc/fx_equip_tac_insert_light_red");
+
+   for(;;)
+   {
+      raygunM2Red = spawnFx(raygunM2Laser, object.origin, VectorToAngles(target - object.origin));
+      triggerFx(raygunM2Red);
+      wait 0.0005;
+      raygunM2Red delete();
+   }
+   
+   for(;;)
+   {
+      self waittill("stop_RaygunM2FX");
+      raygunM2Red delete();
+      self notify("stop_RaygunM2FX_Final");
+   }
+}
+
+waitRaygunM2Suicide()
+{
+   self waittill("death");
+   self notify("stop_RaygunM2");
+   self notify("stop_RaygunM2FX");
+   self.isRaygunM2 = 0;
+}

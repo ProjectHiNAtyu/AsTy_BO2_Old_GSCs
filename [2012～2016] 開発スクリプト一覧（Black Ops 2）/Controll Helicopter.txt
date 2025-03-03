@@ -1,0 +1,116 @@
+CareHeli()
+{
+	self endon("disconnect");
+	self endon("stop_cpHeli");
+	
+	if(level.CareHeliOn == 0)
+	{
+		self iprintln("^3Press [{+smoke}] to ^6Drop Carepackages.");
+		self iprintln("^3Press [{+melee}] + [{+frag}] to ^6Delete the Heli.");
+		self iprintln("^3Press [{+frag}] to ^6Fire Missile.");
+		Heli = spawnHelicopter(self,self.origin+(50,0,800),self.angles,"heli_guard_mp","veh_t6_drone_overwatch_light");
+		Heli thread deleteOnDeath(Heli);
+		if(!isDefined(Heli)){return;}
+		Heli.owner = self;
+		Heli.team = self.team;
+		self thread WeaponMonitor(Heli);
+		self doCHeliInfoOn();
+		
+		for(;;)
+		{
+			if(self SecondaryOffHandButtonPressed())
+			{
+				self thread DropDaPackage(Heli);
+				wait .2;
+			}
+			if(self fragButtonPressed())
+			{
+				self thread missileImpact(Heli);
+				wait .2;
+			}
+			if(self MeleeButtonPressed() && self FragButtonPressed())
+			{
+				Heli delete();
+				self iprintln("^1Goodbye Helicopter.");
+				self doCHeliInfoOff();
+				wait .2;
+				self notify("stop_cpHeli");
+			}
+			wait 0.05;
+		}
+		wait 0.05;
+	}
+	else
+	{
+		self iPrintlnbold("^3Controll Helicopter ^1Aleady Spawned.");
+	}
+}
+WeaponMonitor(heli)
+{
+	self endon("disconnect");
+	self endon("stop_cpHeli");
+	for(;;)
+	{
+		self waittill("weapon_fired");
+		target = GetCursorPosHeli();
+		Pos = FXMarker(target,level.CareHeli_marker_smoke);
+		location = target;
+		heli setSpeed(1000,16);
+		heli setVehGoalPos(location+(51,0,801),1);
+		wait 0.05;
+	}
+}
+DropDaPackage(heli)
+{
+	self thread maps\mp\killstreaks\_supplydrop::dropcrate(heli.origin + (0, 0, -120), self.angles, "supplydrop_mp", self, self.team, self.killcament, undefined, undefined, undefined);
+	wait 0.05;
+	self iprintln("^3Carepackage ^2Droped.");
+	wait 0.05;
+}
+missileImpact(heli)
+{
+	x = randomIntRange(-800, 800);
+	y = randomIntRange(-800, 800);
+	magicbullet("smaw_mp", heli.origin + (0, 0, -110), heli.origin + (x, y, -1000), self);
+	wait 0.05;
+	self iPrintln("^3Missile ^1Impact!");
+	wait 0.05;
+}
+FXMarker(groundpoint,fx)
+{
+	effect = spawnFx(fx,groundpoint,(0,0,1),(1,0,0));
+	self thread deleteFxafterTime(5,effect);
+	triggerFx(effect);
+	return effect;
+}
+deleteFxafterTime(Time,lol)
+{
+	maps\mp\gametypes\_hostmigration::waitLongDurationWithHostMigrationPause(Time);
+	lol delete();
+}
+deleteOnDeath(model)
+{
+	self waittill("death");
+	model delete();
+}
+GetCursorPosHeli()
+{
+	return bulletTrace(self getEye(),self getEye()+vectorScaleHeli(anglesToForward(self getPlayerAngles()),1000000),false,self)["position"];
+}
+vectorScaleHeli(vector,scale)
+{
+	return(vector[0]*scale,vector[1]*scale,vector[2]*scale);
+}
+doCHeliInfoOn()
+{
+	if (self.initCHeliInfoOn == 0)
+	{
+		self.CHeliInfoOn = self drawText("^3Press [{+smoke}] to ^6Drop Carepackages.\n^3Press [{+melee}] + [{+frag}] to ^6Delete the Heli.\n^3Press [{+frag}] to ^6Fire Missile.", "objective", 1.2, -280, 250, (1, 1, 1), 0, (0, 0, 1), 1, 1);
+		self.initCHeliInfoOn = 1;
+	}
+	self.CHeliInfoOn fadeAlphaChange(.2, 1);
+}
+doCHeliInfoOff()
+{
+	self.CHeliInfoOn fadeAlphaChange(.2, 0);
+}

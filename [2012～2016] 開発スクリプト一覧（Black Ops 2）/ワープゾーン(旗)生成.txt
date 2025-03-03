@@ -1,0 +1,132 @@
+
+/*
+
+Function名: Spawn Warp Zone
+Credit: AsTy
+
+*/
+
+init()
+{
+	precacheModel("mp_flag_green");
+	precacheModel("mp_flag_red");
+}
+initTeletoFlag()
+{
+	self endon("disconnect");
+	self endon("stop_TeletoFlag");
+	
+	if(level.setTele1Ori == 3)
+	{
+		level.setTele1Ori = 0;
+		self notify("stop_warpzone");
+		level.TtF delete();
+		level.TtF2 delete();
+		self iPrintlnbold("^3Flag Object ^1deleted.");
+		self iPrintln("^3Warpzone setting is ^2Restart.");
+		wait 0.5;
+	}
+	for(;;)
+	{
+		self.TtF["setOrigin"] = self.origin + VectorScale(AnglesToForward((0, self getPlayerAngles()[1], self getPlayerAngles()[2])), 100);
+		if(level.setTele1Ori == 0)
+		{
+			level.setTele1Ori = 1;
+			self iPrintlnbold("^3Please set ^61st Teleport Start Flag.");
+			self iPrintln("^3Press [{+actionslot 3}] to ^6Set.");
+			wait 0.5;
+		}
+		if(level.setTele1Ori == 1)
+		{
+			if(self actionSlotThreeButtonPressed())
+			{
+				level.setTele1Ori = 2;
+				level.TtF = spawn("script_model", self.TtF["setOrigin"]);
+				level.TtF.angles = (0,10,0);
+				level.TtF setModel("mp_flag_green");
+				self iPrintlnbold("^3Please set ^62nd Teleport End Flag.");
+				self iPrintln("^3Press [{+actionslot 4}] to ^6Set.");
+				wait 0.5;
+			}
+		}
+		if(level.setTele1Ori == 2)
+		{
+			if(self actionSlotFourButtonPressed())
+			{
+				level.setTele1Ori = 3;
+				level.TtF2 = spawn("script_model", self.TtF["setOrigin"]);
+				level.TtF2.angles = (0,10,0);
+				level.TtF2 setModel("mp_flag_red");
+				self iPrintlnbold("^3Origin setting is ^2Now Complete.");
+				self iPrintln("^3Start ^2Warpzone^3...");
+				wait 0.5;
+				foreach(player in level.players)
+				player thread doTeletoFlag();
+				self notify("stop_TeletoFlag");
+			}
+		}
+		wait 0.05;
+	}
+}
+
+//触れたらテレポート版
+
+doTeletoFlag()
+{
+	self endon("disconnect");
+	self endon("stop_warpzone");
+	for(;;)
+	{
+		if(distance(self.origin, level.TtF.origin) < 95)
+		{
+			self setorigin(level.TtF2.origin);
+			wait 2;
+		}
+
+		if(distance(self.origin, level.TtF2.origin) < 95)
+		{
+			self setorigin(level.TtF.origin);
+			wait 2;
+		}
+		wait 0.05;
+	}
+}
+
+//表示出してボタン押したらテレポート版
+
+doTeletoFlag()
+{
+	self endon("disconnect");
+	self endon("stop_warpzone");
+
+	for(;;)
+	{
+		self.TtFGInfoOn destroy();
+		self.TtFRInfoOn destroy();
+
+		if(distance(self.origin, level.TtF.origin) < 95)
+		{
+			self.TtFGInfoOn = self createFontString( "hudbig", 2.2 );
+			self.TtFGInfoOn setPoint( "TOP", "TOP", 0, 50 );
+			self.TtFGInfoOn setText("^3Press [{+usereload}] to Teleport to ^1Red Flag");
+			if(self useButtonPressed())
+			{
+				self setorigin(level.TtF2.origin);
+				wait 1;
+			}
+		}
+
+		if(distance(self.origin, level.TtF2.origin) < 95)
+		{
+			self.TtFRInfoOn = self createFontString( "hudbig", 2.2 );
+			self.TtFRInfoOn setPoint( "TOP", "TOP", 0, 50 );
+			self.TtFRInfoOn setText("^3Press [{+usereload}] to Teleport to ^2Green Flag");
+			if(self useButtonPressed())
+			{
+				self setorigin(level.TtF.origin);
+				wait 1;
+			}
+		}
+		wait 0.05;
+	}
+}

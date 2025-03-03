@@ -1,0 +1,113 @@
+LightningThunder()
+{
+	self thread init_LightningThunder(1);
+}
+
+init_LightningThunder(Notice)
+{
+	if(self.isLightningThunder == 0)
+	{
+		self thread ProvideWeapon("saiga12_mp+reflex", 39, 1, 0, "");
+		self thread do_LightningThunder();
+		if(Notice == 1)
+		{
+			self iPrintln("^6Lightning Thunder ^7: [^2Given^7]");
+			if(self.NoticeTextMode == 0)
+				self thread optionCalledMesage("^3b, Biteeeeeee!!!!", 1, "^7This is either ^3Biribiri-Tyuugakusei!?", (1, 1, 0.502), 8, 0);
+			else
+				self thread init_NotifySetText(0, 0, "^6Lightning Thunder ^7is ^2Given.", (1, 1, 1), 1, (0, 0, 1), 3, 1, "^3b, Biteeeeeee!!!! ^7This is either ^3Biribiri-Tyuugakusei!?", (1, 1, 1), 0, (0, 0, 0));
+		}
+		self.isLightningThunder = 1;
+	}
+	else
+	{
+		self notify("stop_LightningThunder");
+		self takeWeapon("saiga12_mp+reflex");
+		if(Notice == 1)
+		{
+			self iPrintln("^6Lightning Thunder ^7: [^1Taked^7]");
+			if(self.NoticeTextMode == 1)
+				self thread init_NotifySetText(0, 0, "^6Lightning Thunder ^7is ^1Taked.", (1, 1, 1), 1, (0, 0, 1), 2, 0);
+		}
+		self.isLightningThunder = 0;
+	}
+}
+
+//==========[ 本体 ]==========
+
+//発砲→メインFnction呼び出し
+
+do_LightningThunder()
+{
+	self endon("disconnect");
+	self endon("death");
+	self endon("stop_LightningThunder");
+	for(;;)
+	{
+		self waittill("weapon_fired");
+		if(self getCurrentWeapon() == "saiga12_mp+reflex")
+		{
+			self thread main_LightningThunder(1);
+		}
+	}
+}
+
+//メイン動作
+
+main_LightningThunder(DamageType)
+{
+	LightningThunder_Explode = loadfx("weapon/emp/fx_emp_explosion_equip");
+	LightningThunder_Explode2 = loadfx("explosions/fx_exp_equipment_lg");
+	WeaponOrigin = self getTagOrigin("tag_weapon_right");
+	Target = self TraceBullet(1000000);
+
+	LightningThunder_Missile = spawn("script_model", WeaponOrigin + VectorScale(AnglesToForward(self GetPlayerAngles()), 70));
+	LightningThunder_Missile setModel("projectile_at4");
+	LightningThunder_Missile.killcament = LightningThunder_Missile;
+	EndLocation = BulletTrace(LightningThunder_Missile.origin, Target, false, self)["position"];
+	LightningThunder_Missile.angles = VectorToAngles(EndLocation - LightningThunder_Missile.origin);
+	LightningThunder_Missile rotateto(VectorToAngles(EndLocation - LightningThunder_Missile.origin), 0.001);
+
+	if(DamageType == 0)
+		self thread effect_LightningThunder(LightningThunder_Missile, 0);
+	else
+		self thread effect_LightningThunder(LightningThunder_Missile, 1);
+	
+	LightningThunder_Missile moveto(EndLocation, 0.4);
+	wait 0.401;
+	self notify("stop_LightningThunder_FX");
+	PlayFX(LightningThunder_Explode, LightningThunder_Missile.origin);
+	PlayFX(LightningThunder_Explode2, LightningThunder_Missile.origin);
+	//PlayFX(level.chopper_fx["explode"]["large"], LightningThunder_Missile.origin);
+	LightningThunder_Missile PlaySound(level.heli_sound["crash"]);
+	Earthquake(1, 1, LightningThunder_Missile.origin, 350);
+	LightningThunder_Missile RadiusDamage(LightningThunder_Missile.origin, 220, 220, 220, self);
+	LightningThunder_Missile delete();
+}
+
+//エフェクト追尾
+
+effect_LightningThunder(object, DamageType)
+{
+	self endon("disconnect");
+	self endon("stop_LightningThunder_FX");
+	for(;;)
+	{
+		PlayFX(level._effect["prox_grenade_player_shock"], object.origin);
+		PlayFX(level._effect["prox_grenade_player_shock"], object.origin + (5, 5, 5));
+		PlayFX(level._effect["prox_grenade_player_shock"], object.origin + (-5, -5, -5));
+		PlayFX(level._effect["prox_grenade_player_shock"], object.origin + (5, -5, -5));
+		PlayFX(level._effect["prox_grenade_player_shock"], object.origin + (-5, -5, 5));
+		PlayFX(level._effect["prox_grenade_player_shock"], object.origin + (5, 5, -5));
+		PlayFX(level._effect["prox_grenade_player_shock"], object.origin + (-5, 5, 5));
+		PlayFX(level._effect["prox_grenade_player_shock"], object.origin + (5, -5, 5));
+		PlayFX(level._effect["prox_grenade_player_shock"], object.origin + (-5, 5, -5));
+		object PlaySound("mpl_lightning_flyover_boom");
+		if(DamageType == 1)
+		{
+			Earthquake(1, 1, object.origin, 100);
+			object RadiusDamage(object.origin, 90, 90, 90, self);
+		}
+		wait 0.01;
+	}
+}

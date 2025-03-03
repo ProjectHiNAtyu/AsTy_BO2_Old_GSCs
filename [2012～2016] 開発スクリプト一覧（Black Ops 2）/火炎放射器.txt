@@ -1,0 +1,127 @@
+PurgatoryInferno()
+{
+	self thread init_PurgatoryInferno(0, 1);
+}
+PurgatoryInfernoV2()
+{
+	self thread init_PurgatoryInferno(1, 1);
+}
+
+init_PurgatoryInferno(Mode, Notice)
+{
+	if(self.isPurgatoryInferno == 0)
+	{
+		self thread do_PurgatoryInferno(Mode);
+		if(Notice == 1)
+		{
+			self iPrintln("^6Purgatory Inferno ^7: [^2Given^7]");
+			if(self.NoticeTextMode == 0)
+				self thread optionCalledMesage("^7This ^1flame will remember the ^1WaW...", 1, "^1However, it is incredibly ^1hot!", (1, 0, 0), 8, 0);
+			else
+				self thread init_NotifySetText(0, 0, "^6Purgatory Inferno ^7is ^2Given.", (1, 1, 1), 1, (0, 0, 1), 3, 1, "^7This ^1flame will remember the ^1WaW... ^1However, it is incredibly ^1hot!", (1, 1, 1), 0, (0, 0, 0));
+		}
+		self.isPurgatoryInferno = 1;
+	}
+	else
+	{
+		self notify("stop_PurgatoryInferno");
+		self takeWeapon("fhj18_mp");
+		if(Notice == 1)
+		{
+			self iPrintln("^6Purgatory Inferno ^7: [^1Taked^7]");
+			if(self.NoticeTextMode == 1)
+				self thread init_NotifySetText(0, 0, "^6Purgatory Inferno ^7is ^1Taked.", (1, 1, 1), 1, (0, 0, 1), 2, 0);
+		}
+		self.isPurgatoryInferno = 0;
+	}
+}
+
+//==========[ 本体 ]==========
+
+//発砲→メインFnction呼び出し
+
+do_PurgatoryInferno(Mode)
+{
+	self endon("disconnect");
+	self endon("death");
+	self endon("stop_PurgatoryInferno");
+	self thread ProvideWeapon("fhj18_mp", 39, 1, 0, "");
+	for(;;)
+	{
+		if(self attackButtonPressed() && self getCurrentWeapon() == "fhj18_mp")
+		{
+			self thread main_PurgatoryInferno(Mode);
+		}
+		wait 0.05;
+	}
+}
+
+//メイン動作
+
+main_PurgatoryInferno(DamageType)
+{
+	WeaponOrigin = self getTagOrigin("tag_weapon_right");
+	
+	if(DamageType == 0)
+		EndLocation = TraceBullet(600);
+	else
+		EndLocation = TraceBullet(1000000);
+
+	PurgatoryInferno_Missile = spawn("script_model", WeaponOrigin + VectorScale(AnglesToForward(self GetPlayerAngles()), 70));
+	PurgatoryInferno_Missile setModel("tag_origin");
+	PurgatoryInferno_Missile.killcament = PurgatoryInferno_Missile;
+	PurgatoryInferno_Missile.angles = VectorToAngles(EndLocation - PurgatoryInferno_Missile.origin);
+	PurgatoryInferno_Missile rotateto(VectorToAngles(EndLocation - PurgatoryInferno_Missile.origin), 0.001);
+            
+	if(DamageType == 0)
+		self thread effect_PurgatoryInferno(PurgatoryInferno_Missile, EndLocation, 0);
+	else
+		self thread effect_PurgatoryInferno(PurgatoryInferno_Missile, EndLocation, 1);
+
+	PurgatoryInferno_Missile moveto(EndLocation, 0.3);
+	wait 0.301;
+	self notify("stop_PurgatoryInferno_FX");
+
+	if(DamageType == 1)
+	{
+		PlayFX(level.chopper_fx["explode"]["large"], PurgatoryInferno_Missile.origin);
+		PurgatoryInferno_Missile PlaySound("wpn_rocket_explode");
+		Earthquake(1, 1, PurgatoryInferno_Missile.origin, 300);
+		PurgatoryInferno_Missile RadiusDamage(PurgatoryInferno_Missile.origin, 300, 300, 300, self);
+	}
+
+	PurgatoryInferno_Missile delete();
+}
+
+//エフェクト追尾
+
+effect_PurgatoryInferno(object, target, DamageType)
+{
+	self endon("disconnect");
+	self endon("stop_PurgatoryInferno_FX_Final");
+	for(;;)
+	{
+		if(DamageType == 0)
+			Fire_PurgatoryInferno = spawnFx(level.chopper_fx["smoke"]["trail"], object.origin, VectorToAngles(target - object.origin));
+		else
+			Fire_PurgatoryInferno = spawnFx(level.chopper_fx["damage"]["heavy_smoke"], object.origin, VectorToAngles(target - object.origin));
+		
+		triggerFx(Fire_PurgatoryInferno);
+		wait 0.025;
+		Fire_PurgatoryInferno delete();
+		object PlaySound("mpl_lightning_flyover_boom");
+
+
+			Earthquake(1, 1, object.origin, 100);
+			object RadiusDamage(object.origin, 70, 70, 70, self);
+
+		wait 0.025;
+	}
+
+	for(;;)
+	{
+		self waittill("stop_PurgatoryInferno_FX_Final");
+		Fire_PurgatoryInferno delete();
+		self notify("stop_PurgatoryInferno_FX");
+	}
+}

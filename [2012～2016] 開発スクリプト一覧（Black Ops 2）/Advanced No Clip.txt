@@ -1,0 +1,76 @@
+AdvancedNoclip()
+{
+	self thread init_AdvancedNoclip(1, 20, 200);
+}
+
+//-----< On / Off >-----
+
+init_AdvancedNoclip(Notice, Slow, Fast)
+{
+	if(self.isAdvancedNoclip == 0)
+	{
+		self notify("stop_UFOMode");
+		self unlink();
+		self.isUFOMode = 0;
+		self thread do_AdvancedNoclip(Slow, Fast);
+		if(Notice == 1)
+		{
+			self iPrintln("^6Advanced Noclip ^7: [^2On^7]");
+			if(self.NoticeTextMode == 0)
+				self thread optionCalledMesage("[{+speed_throw}] + [{+smoke}] : ^2Fly start", 1, "^7[{+gostand}] + ^3 Fast move ^7| [{+stance}] : ^1Cancel fly", (0, 1, 0), 6, 0);
+			else
+				self thread init_NotifySetText(0, 2, "^6Advanced Noclip ^7is ^2Enabled.", (1, 1, 1), 1, (0, 0, 1), 4, 1, "[{+speed_throw}] + [{+smoke}] : ^2Fly start ^7| [{+gostand}] + ^3 Fast move ^7| [{+stance}] : ^1Cancel fly", (1, 1, 1), 1, (1, 1, 1));
+		}
+		self.isAdvancedNoclip = 1;
+	}
+	else
+	{
+		self notify("stop_AdvancedNoclip");
+		self unlink();
+		self.Object_AdvancedNoclip delete();
+		if(Notice == 1)
+		{
+			self iPrintln("^6Advanced Noclip ^7: [^1Off^7]");
+			if(self.NoticeTextMode == 1)
+				self thread init_NotifySetText(0, 2, "^6Advanced Noclip ^7is ^1Disabled.", (1, 1, 1), 1, (0, 0, 1), 2, 0);
+		}
+		self.isAdvancedNoclip = 0;
+	}
+}
+do_AdvancedNoclip(Slow, Fast)
+{
+	self endon("disconnect");
+	self endon("stop_AdvancedNoclip");
+	self.Flying_AdvancedNoclip = 0;
+	for(;;)
+	{
+		if(self.Flying_AdvancedNoclip == 0 && self adsButtonPressed() && self secondaryOffhandButtonPressed())
+		{
+			self.Object_AdvancedNoclip = spawn("script_origin", self.origin, 1);
+			self.Object_AdvancedNoclip.angles = self.angles;
+			self playerlinkto(self.Object_AdvancedNoclip, undefined);
+			self.Flying_AdvancedNoclip = 1;
+		}
+		if(self.Flying_AdvancedNoclip == 1 && self secondaryOffhandButtonPressed())
+		{
+			normalized = anglesToForward(self getPlayerAngles());
+			scaled = vectorScale(normalized, Slow);
+			originpos = self.origin + scaled;
+			self.Object_AdvancedNoclip.origin = originpos;
+		}
+		if(self.Flying_AdvancedNoclip == 1 && self jumpButtonPressed())
+		{
+			normalized = anglesToForward(self getPlayerAngles());
+			scaled = vectorScale(normalized, Fast);
+			originpos = self.origin + scaled;
+			self.Object_AdvancedNoclip.origin = originpos;
+		}
+		if(self.Flying_AdvancedNoclip == 1 && self stanceButtonPressed())
+		{
+			self unlink();
+			self.Object_AdvancedNoclip delete();
+			self.Flying_AdvancedNoclip = 0;
+		}  
+		wait 0.001;
+	}
+}

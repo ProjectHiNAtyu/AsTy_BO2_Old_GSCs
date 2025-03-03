@@ -1,0 +1,17 @@
+
+ŒÄ‚Ño‚µ•û: displayMessage("Hello", self);
+
+displayMessage(message, player)
+{
+	level thread maps/mp/_popups::displayteammessagetoall(message, player);
+}
+
+-----
+
+All Player ”Å
+
+displayMessage(message)
+{
+		foreach(player in level.players)
+         level thread maps/mp/_popups::displayteammessagetoall("Get Negged Bitch");
+}

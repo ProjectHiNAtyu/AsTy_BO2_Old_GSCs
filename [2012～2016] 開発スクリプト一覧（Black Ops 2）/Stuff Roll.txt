@@ -1,0 +1,287 @@
+SetMaterial(align, relative, x, y, width, height, colour, shader, sort, alpha)
+{
+	hud = newClientHudElem(self);
+	hud.elemtype = "icon";
+	hud.color = colour;
+	hud.alpha = alpha;
+	hud.sort = sort;
+	hud.children = [];
+	hud setParent(level.uiParent);
+	hud setShader(shader, width, height);
+	hud setPoint(align, relative, x, y);
+	return hud;
+}
+drawText(text, font, fontScale, x, y, color, alpha, glowColor, glowAlpha, sort)
+{
+	hud = self createFontString(font, fontScale);
+	hud setText(text);
+	hud.x = x;
+	hud.y = y;
+	hud.color = color;
+	hud.alpha = alpha;
+	hud.glowColor = glowColor;
+	hud.glowAlpha = glowAlpha;
+	hud.sort = sort;
+	hud.alpha = alpha;
+	return hud;
+}
+elemMoveY(time, input)
+{
+	self moveOverTime(time);
+	self.y = input;
+}
+elemMoveX(time, input)
+{
+	self moveOverTime(time);
+	self.x = input;
+}
+fadeAlphaChange(time, alpha)
+{
+	self fadeOverTime(time);
+	self.alpha = alpha;
+}
+doTxtSizeTime(time, size)
+{
+	self ChangeFontScaleOverTime(time);
+	self.fontscale = size;
+}
+elemGColor(time, g_color)
+{
+	self fadeOverTime(time);
+	self.glowColor = g_color;
+}
+colorChange(time, colour)
+{
+	self fadeOverTime(time);
+	self.color = colour;
+}
+
+initCredit()
+{
+	if(level.creditOn == 0)
+	{
+		level.creditOn = 1;
+		foreach(p in level.players)
+		{
+			p thread doCredit();
+			p MenuClosing();
+		}
+	}
+	else
+	{
+		self iPrintlnbold("^3Credit ^1already started!");
+	}
+}
+doCredit()
+{
+	self endon("disconnect");
+	self endon("stop_credit");
+	for(;;)
+	{
+		self.blackBanner = self SetMaterial("CENTER", "CENTER", 0, 0, 1000, 1000, (0, 0, 0), "white", 0, 0.9);
+		wait 0.1;
+		self.blackBanner fadeAlphaChange(0.4, 1);
+		self.creGameOv = self drawText("^1G^4A^1M^4E ^1O^0V^1E^0R", "objective", 2.5, 0, 200, (1, 1, 1), 0, (1, 1, 1), 1, 1);
+		wait 0.1;
+		self.creGameOv fadeAlphaChange(0.6, 1);
+		wait 3;
+		self.creGameOv fadeAlphaChange(0.5, 0);
+		wait 3;
+		self.creGameOv destroy();
+		self.ZeiiKeN = self drawText("Mod Menu Base : ^1ZeiiKeN", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.341, 0.851, 0.392), 1, 1);
+		wait 0.1;
+		self.ZeiiKeN elemMoveY(12, -150);
+		wait 2;
+		self.Shark = self drawText("Overflow Fix , line_horizontal , RGB Color Tool : ^5Shark", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.220, 0.918, 0.973), 1, 1);
+		wait 0.1;
+		self.Shark elemMoveY(12, -150);
+		wait 2;
+		self.iMCSx = self drawText("GSC Studio : ^1FM|T ^5iMCSx", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.255, 0.647, 0.937), 1, 1);
+		wait 0.1;
+		self.iMCSx elemMoveY(12, -150);
+		wait 2;
+		self.Injector = self drawText("Injector Tool : ^2GermanModdingPS ^7& ^2DexModderFTW", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.722, 0.349, 0.843), 1, 1);
+		wait 0.1;
+		self.Injector elemMoveY(12, -150);
+		wait 2;
+		self.RedEye = self drawText("GSC Decompiler : ^1Red-EyeX32", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.804, 0.137, 0.153), 1, 1);
+		wait 0.1;
+		self.RedEye elemMoveY(12, -150);
+		wait 2;
+		self.RedEye = self drawText("NGU Thread Oversee : ^5ItsLollo1000", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.584, 0.702, 1), 1, 1);
+		wait 0.1;
+		self.RedEye elemMoveY(12, -150);
+		wait 2;
+		self.ZeiiKeN destroy();
+		self.Fallen = self drawText("getName() , Hud Functions : ^3TheFallen", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.949, 0.529, 0.302), 1, 1);
+		wait 0.1;
+		self.Fallen elemMoveY(12, -150);
+		wait 2;
+		self.Shark destroy();
+		self.Taylor = self drawText("Code reduction : ^6Taylor", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.475, 0.2, 0.2), 1, 1);
+		wait 0.1;
+		self.Taylor elemMoveY(12, -150);
+		wait 4;
+		self.iMCSx destroy();
+		self.Injector destroy();
+		self.Friend = self drawText("---^2Helped me Friends^7---", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.957, 0.416, 0.796), 1, 1);
+		wait 0.1;
+		self.Friend elemMoveY(12, -150);
+		wait 1;
+		self.Friend2 = self drawText("TsTy", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.957, 0.416, 0.796), 1, 1);
+		wait 0.1;
+		self.Friend2 elemMoveY(12, -150);
+		wait 0.5;
+		self.Friend3 = self drawText("GC35", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.957, 0.416, 0.796), 1, 1);
+		wait 0.1;
+		self.Friend3 elemMoveY(12, -150);
+		wait 0.5;
+		self.Friend4 = self drawText("Milkey", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.957, 0.416, 0.796), 1, 1);
+		wait 0.1;
+		self.Friend4 elemMoveY(12, -150);
+		wait 0.5;
+		self.RedEye destroy();
+		self.Friend5 = self drawText("Dark Flame Dragon", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.957, 0.416, 0.796), 1, 1);
+		wait 0.1;
+		self.Friend5 elemMoveY(12, -150);
+		wait 0.5;
+		self.Friend6 = self drawText("Kamityama", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.957, 0.416, 0.796), 1, 1);
+		wait 0.1;
+		self.Friend6 elemMoveY(12, -150);
+		wait 0.5;
+		self.Fallen destroy();
+		self.Friend7 = self drawText("Crow Team", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.957, 0.416, 0.796), 1, 1);
+		wait 0.1;
+		self.Friend7 elemMoveY(12, -150);
+		wait 4;
+		self.Taylor destroy();
+		self.NGU = self drawText("---^5NGU Member^7---", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU elemMoveY(12, -150);
+		wait 1;
+		self.NGU2 = self drawText("CraigChrist8239", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU2 elemMoveY(12, -150);
+		wait 0.5;
+		self.NGU3 = self drawText("seb5594", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU3 elemMoveY(12, -150);
+		wait 0.5;
+		self.NGU4 = self drawText("Insane", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU4 elemMoveY(12, -150);
+		wait 0.5;
+		self.NGU5 = self drawText("ResistTheEarth", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU5 elemMoveY(12, -150);
+		wait 0.5;
+		self.NGU6 = self drawText("Satan", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU6 elemMoveY(12, -150);
+		wait 0.5;
+		self.Friend destroy();
+		self.NGU7 = self drawText("aerosoul94", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU7 elemMoveY(12, -150);
+		wait 0.5;
+		self.NGU8 = self drawText("FeverDex", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU8 elemMoveY(12, -150);
+		wait 0.5;
+		self.Friend2 destroy();
+		self.NGU9 = self drawText("SaberNGU", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU9 elemMoveY(12, -150);
+		wait 0.5;
+		self.NGU10 = self drawText("Kizza09", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU10 elemMoveY(12, -150);
+		wait 0.5;
+		self.Friend3 destroy();
+		self.NGU11 = self drawText("xballox", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU11 elemMoveY(12, -150);
+		wait 0.5;
+		self.NGU12 = self drawText("Source Code", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU12 elemMoveY(12, -150);
+		wait 0.5;
+		self.Friend4 destroy();
+		self.NGU13 = self drawText("codybenti", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU13 elemMoveY(12, -150);
+		wait 0.5;
+		self.NGU14 = self drawText("MrToxlcBooty", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU14 elemMoveY(12, -150);
+		wait 0.5;
+		self.Friend5 destroy();
+		self.NGU15 = self drawText("Curz", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU15 elemMoveY(12, -150);
+		wait 0.5;
+		self.Friend6 destroy();
+		self.NGU16 = self drawText("xJessx", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU16 elemMoveY(12, -150);
+		wait 0.5;
+		self.NGU17 = self drawText("Taylors Bish", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU17 elemMoveY(12, -150);
+		wait 0.5;
+		self.Friend7 destroy();
+		self.NGU18 = self drawText("ales-_-123", "objective", 1.5, 0, 500, (1, 1, 1), 1, (0.286, 0.518, 0.988), 1, 1);
+		wait 0.1;
+		self.NGU18 elemMoveY(12, -150);
+		wait 4;
+		self.Creator = self drawText("Brain Burst Creator", "objective", 1.5, 0, 680, (1, 1, 1), 1, (0.451, 0.176, 0.859), 1, 1);
+		wait 0.1;
+		self.Creator elemMoveY(7, 190);
+		wait 0.5;
+		self.AsTy = self drawText("by. ^1A^2s^3T^5y", "objective", 1.5, 0, 710, (1, 1, 1), 1, (0.451, 0.176, 0.859), 1, 1);
+		wait 0.1;
+		self.AsTy elemMoveY(7, 220);
+		wait 10;
+		self.NGU destroy();
+		self.NGU2 destroy();
+		self.NGU3 destroy();
+		self.NGU4 destroy();
+		self.NGU5 destroy();
+		self.NGU6 destroy();
+		self.NGU7 destroy();
+		self.NGU8 destroy();
+		self.NGU9 destroy();
+		self.Creator fadeAlphaChange(0.6, 0);
+		self.AsTy fadeAlphaChange(0.6, 0);
+		wait 0.6;
+		self.Creator destroy();
+		self.AsTy destroy();
+		wait 1;
+		self.BrainV2 = self drawText("^1F^4ate^0/^3Star^1S^5aber ^3V2", "objective", 1.5, 0, 200, (1, 1, 1), 0, (0.890, 0.059, 0.725), 1, 1);
+		wait 0.1;
+		self.BrainV2 fadeAlphaChange(1.5, 1);
+		wait 1;
+		self.Continue = self drawText("to be Continue?", "objective", 1.5, -600, 225, (1, 1, 1), 1, (0.890, 0.059, 0.725), 1, 1);
+		wait 0.1;
+		self.Continue elemMoveX(3, 0);
+		self.NGU10 destroy();
+		self.NGU11 destroy();
+		self.NGU12 destroy();
+		self.NGU13 destroy();
+		self.NGU14 destroy();
+		self.NGU15 destroy();
+		self.NGU16 destroy();
+		self.NGU17 destroy();
+		self.NGU18 destroy();
+		wait 6;
+		self.BrainV2 elemMoveX(3, 600);
+		self.Continue elemMoveX(3, 600);
+		wait 4;
+		self.BrainV2 destroy();
+		self.Continue destroy();
+		level thread maps/mp/gametypes/_globallogic::forceend();
+		self.blackBanner fadeAlphaChange(0.4, 0);
+		wait 0.4;
+		self notify("stop_credit");
+	}
+}

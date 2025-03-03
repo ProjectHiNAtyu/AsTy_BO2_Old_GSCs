@@ -1,0 +1,158 @@
+
+//=====[ 前提条件 / 短縮コード ]=====
+
+//武器譲渡
+
+initGiveWeap(code, name, camo, enab)
+{
+   if(camo == 0)
+   {
+      self giveWeapon(code, 0, false);
+   }
+   else
+   {
+      self giveWeapon(code, 0, true(camo, 0, 0, 0, 0));
+   }
+
+   self switchToWeapon(code);
+   self givemaxammo(code);
+   self setWeaponAmmoClip(code, weaponClipSize(self getCurrentWeapon()));
+
+   if(enab == 1)
+   {
+      self iPrintlnbold("^6Give Weapon to ^2" + name);
+   }
+}
+
+//Typewriterメッセージカスタム表示
+
+optionCalledMesage(titleWord, isNotify, notifyWord, color, time)
+{
+   optionMessage = spawnstruct();
+   optionMessage.titleText = titleWord;
+   if(isNotify == 1)
+   {
+      optionMessage.notifyText = notifyWord;
+   }
+   optionMessage.glowColor = color;
+   optionMessage.duration = time;
+   optionMessage.font = "objective";
+   optionMessage.hideWhenInMenu = false;
+   self thread maps\mp\gametypes\_hud_message::notifyMessage(optionMessage);
+}
+
+//着弾地点の計算
+
+traceBullet()
+{
+   return bulletTrace(self getEye(), self getEye()+vectorScale(anglesToForward(self getPlayerAngles()), 1000000), false, self)["position"];
+}
+
+//=====[ 呼び出し / スイッチ ]=====
+
+initRaygun()
+{
+   if(self.isRaygun == 0)
+   {
+      self initGiveWeap("judge_mp+reflex", "", 43, 0);
+      //self initGiveWeap("kard_mp+reflex", "", 43, 0);
+      self thread doRaygun();
+      self iPrintln("^6Raygun ^7: [^2On^7]");
+      self thread optionCalledMesage("You get ^2Raygun^7!!", 1, "^7Is this a ^0Zombie?", (0.243, 0.957, 0.545), 8);
+      self.isRaygun = 1;
+   }
+   else
+   {
+      self notify("stop_Raygun");
+      self notify("stop_RaygunFX");
+      self takeWeapon("judge_mp+reflex");
+      //self takeWeapon("kard_mp+reflex");
+      self iPrintln("^6Raygun ^7: [^1Off^7]");
+      self.isRaygun = 0;
+   }
+}
+
+//=====[ 本体 ]=====
+
+//発砲→メインFnction呼び出し
+
+doRaygun()
+{
+   self endon("disconnect");
+   self endon("stop_Raygun");
+   
+   self thread waitRaygunSuicide();
+
+   for(;;)
+   {
+      self waittill("weapon_fired");
+      if(self getCurrentWeapon() == "judge_mp+reflex" || self getCurrentWeapon() == "kard_mp+reflex")
+      {
+         self thread mainRaygun();
+      }
+   }
+}
+
+//メイン動作
+      
+mainRaygun()
+{
+   raygunExplode = loadfx("weapon/emp/fx_emp_explosion_equip");
+   raygunExplode2 = loadfx("explosions/fx_exp_equipment_lg");
+   
+   weapOrigin = self getTagOrigin("tag_weapon_right");
+   target = self traceBullet();
+
+   raygunMissile = spawn("script_model", weapOrigin);
+   raygunMissile setModel("projectile_at4");
+   raygunMissile.killcament = raygunMissile;
+   endLocation = BulletTrace(raygunMissile.origin, target, false, self)["position"];
+   raygunMissile.angles = VectorToAngles(endLocation - raygunMissile.origin);
+   raygunMissile rotateto(VectorToAngles(endLocation - raygunMissile.origin), 0.001);
+
+   raygunMissile moveto(endLocation, 0.55);
+   self thread raygunEffect(raygunMissile, endLocation);
+   wait 0.556;
+   self notify("stop_RaygunFX");
+   playfx(raygunExplode, raygunMissile.origin);
+   playfx(raygunExplode2, raygunMissile.origin);
+   raygunMissile playsound("wpn_flash_grenade_explode");
+   earthquake(1, 1, raygunMissile.origin, 300);
+   raygunMissile RadiusDamage(raygunMissile.origin, 200, 200, 200, self);
+   raygunMissile delete();
+}
+
+//緑のトーチEffect移動コード
+
+raygunEffect(object, target)
+{
+   self endon("disconnect");
+   self endon("stop_RaygunFX_Final");
+   self endon("stop_Raygun");
+   
+   raygunLaser = loadFX("misc/fx_equip_tac_insert_light_grn");
+
+   for(;;)
+   {
+      raygunGreen = spawnFx(raygunLaser, object.origin, VectorToAngles(target - object.origin));
+      triggerFx(raygunGreen);
+      wait 0.0005;
+      raygunGreen delete();
+   }
+   
+   for(;;)
+   {
+      self waittill("stop_RaygunFX");
+      effect delete();
+      self notify("stop_RaygunFX_Final");
+   }
+}
+
+waitRaygunSuicide()
+{
+   self waittill("death");
+   self notify("stop_Raygun");
+   self notify("stop_RaygunFX");
+   self.isRaygun = 0;
+}
+

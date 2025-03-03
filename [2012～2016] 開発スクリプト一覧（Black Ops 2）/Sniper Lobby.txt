@@ -1,0 +1,445 @@
+drawText(text, font, fontScale, x, y, color, alpha, glowColor, glowAlpha, sort)
+{
+	hud = self createFontString(font, fontScale);
+	hud setText(text);
+	hud.x = x;
+	hud.y = y;
+	hud.color = color;
+	hud.alpha = alpha;
+	hud.glowColor = glowColor;
+	hud.glowAlpha = glowAlpha;
+	hud.sort = sort;
+	hud.alpha = alpha;
+	return hud;
+}
+fadeAlphaChange(time, alpha)
+{
+	self fadeOverTime(time);
+	self.alpha = alpha;
+}
+
+initNomalLobby()
+{
+	foreach(player in level.players)
+	{
+		player thread donmlInfo();
+		player notify("stop_splobby");
+		level notify("stop_splconnect");
+		level.SniperLobbyOn = 0;
+		player thread cgmforceDeath();
+		player notify("cgm_forceDeath");
+	}
+	self iPrintlnbold("^3Changed ^6Nomal Lobby");
+}
+donmlInfo()
+{
+	if (self.initnmlSawned == 0)
+	{
+		self.nmlInfo = self drawText("^3Changed ^6Nomal Lobby", "objective", 1.5, 0, 200, (1, 1, 1), 0, (1, 0, 0), 1, 1);
+		self.initnmlSawned = 1;
+	}
+	self.nmlInfo fadeAlphaChange(.5, 1);
+	wait 4;
+	self.nmlInfo fadeAlphaChange(.5, 0);
+}
+cgmforceDeath()
+{
+	self waittill("cgm_forceDeath");
+	self suicide();
+}
+
+//===< Sniper Lobby >===
+
+splconnect()
+{
+	level endon("disconnect");
+	level endon("stop_splconnect");
+	for(;;)
+	{
+		level waittill("connecting", player);
+		player thread splspawned();
+	}
+}
+splspawned()
+{
+	self waittill( "spawned_player" );
+	self thread dosplInfo();
+	self thread cgmforceDeath();
+	self notify("cgm_forceDeath");
+	self thread splCodeFlow();
+	self thread splCodeFlowNext();
+}
+initSniperLobby()
+{
+	self thread doSniperLobby();
+}
+doSniperLobby()
+{
+	if(level.SniperLobbyOn == 0)
+	{
+		level.SniperLobbyOn = 1;
+		level thread splconnect();
+		foreach(player in level.players)
+		{
+			player thread dosplInfo();
+			player thread cgmforceDeath();
+			player notify("cgm_forceDeath");
+			player thread splCodeFlow();
+			player thread splCodeFlowNext();
+		}
+	}
+	else
+	self iPrintlnbold("^3It has ^1already been activated^3.");
+	
+}
+dosplInfo()
+{
+	if (self.initsplSawned == 0)
+	{
+		self.splInfo = self drawText("^3Changed ^6Sniper Lobby", "objective", 1.5, 0, 200, (1, 1, 1), 0, (1, 0, 0), 1, 1);
+		self.initsplSawned = 1;
+	}
+	self.splInfo fadeAlphaChange(.5, 1);
+	wait 4;
+	self.splInfo fadeAlphaChange(.5, 0);
+}
+splCodeFlow()
+{
+	self endon("disconnect");
+	self endon("stop_splobby");	
+	for(;;)
+	{
+		self waittill("spawned_player");
+		self thread givespWep();
+		self thread givespPerk();
+		self thread givespVision();
+		self thread dosplActInfo();
+		wait 3;
+		self thread splWelcome();
+	}
+}
+splCodeFlowNext()
+{
+	self waittill("spawned_player");
+	self thread splMtrx();
+	self thread splMaxAmmo();
+	self thread splSpeedup();
+	self thread splTelep();
+}
+givespWep()
+{
+	self takeallweapons();
+	if(self.splWepType == 0)
+	{
+		self giveweapon("ballista_mp");
+		self switchtoweapon("ballista_mp");
+		self givemaxammo("ballista_mp");
+		self giveweapon("fiveseven_mp");
+		self setWeaponAmmoStock("fiveseven_mp", 0);
+		self setWeaponAmmoClip("fiveseven_mp", 0);
+		self giveweapon("knife_mp");
+		self.splWepType = 1;
+	}
+	else if(self.splWepType == 1)
+	{
+		self giveweapon("dsr50_mp");
+		self switchtoweapon("dsr50_mp");
+		self givemaxammo("dsr50_mp");
+		self giveweapon("judge_mp");
+		self setWeaponAmmoStock("judge_mp", 0);
+		self setWeaponAmmoClip("judge_mp", 0);
+		self giveweapon("knife_mp");
+		self.splWepType = 2;
+	}
+	else if(self.splWepType == 2)
+	{
+		self giveweapon("svu_mp");
+		self switchtoweapon("svu_mp");
+		self givemaxammo("svu_mp");
+		self giveweapon("crossbow_mp");
+		self setWeaponAmmoStock("crossbow_mp", 0);
+		self setWeaponAmmoClip("crossbow_mp", 0);
+		self giveweapon("knife_mp");
+		self.splWepType = 3;
+	}
+	else if(self.splWepType == 3)
+	{
+		self giveweapon("as50_mp");
+		self switchtoweapon("as50_mp");
+		self givemaxammo("as50_mp");
+		self giveweapon("870mcs_mp");
+		self setWeaponAmmoStock("870mcs_mp", 0);
+		self setWeaponAmmoClip("870mcs_mp", 0);
+		self giveweapon("knife_mp");
+		self.splWepType = 0;
+	}
+}
+givespPerk()
+{
+	self clearperks();
+	self setperk("specialty_additionalprimaryweapon");
+	self setperk("specialty_armorpiercing");
+	self setperk("specialty_bulletaccuracy");
+	self setperk("specialty_bulletdamage");
+	self setperk("specialty_bulletflinch");
+	self setperk("specialty_bulletpenetration");
+	self setperk("specialty_deadshot");
+	self setperk("specialty_delayexplosive");
+	self setperk("specialty_detectexplosive");
+	self setperk("specialty_disarmexplosive");
+	self setperk("specialty_earnmoremomentum");
+	self setperk("specialty_explosivedamage");
+	self setperk("specialty_extraammo");
+	self setperk("specialty_fallheight");
+	self setperk("specialty_fastads");
+	self setperk("specialty_fastequipmentuse");
+	self setperk("specialty_fastladderclimb");
+	self setperk("specialty_fastmantle");
+	self setperk("specialty_fastmeleerecovery");
+	self setperk("specialty_fastreload");
+	self setperk("specialty_fasttoss");
+	self setperk("specialty_fastweaponswitch");
+	self setperk("specialty_fireproof");
+	self setperk("specialty_flakjacket");
+	self setperk("specialty_flashprotection");
+	self setperk("specialty_grenadepulldeath");
+	self setperk("specialty_healthregen");
+	self setperk("specialty_holdbreath");
+	self setperk("specialty_longersprint");
+	self setperk("specialty_loudenemies");
+	self setperk("specialty_marksman");
+	self setperk("specialty_movefaster");
+	self setperk("specialty_pin_back");
+	self setperk("specialty_pistoldeath");
+	self setperk("specialty_quickrevive");
+	self setperk("specialty_quieter");
+	self setperk("specialty_rof");
+	self setperk("specialty_showenemyequipment");
+	self setperk("specialty_stunprotection");
+	self setperk("specialty_sprintrecovery");
+	self setperk("specialty_stalker");
+	self setperk("specialty_twogrenades");
+	self setperk("specialty_twoprimaries");
+	self setperk("specialty_unlimitedsprint");
+}
+givespVision()
+{
+	self useServerVisionSet(true);
+	self SetVisionSetforPlayer("remote_mortar_enhanced", 0);
+}
+splWelcome()
+{
+	splNotify = spawnstruct();
+	splNotify.titleText = "^3This is a ^4S^5n^4i^5p^4e^5r ^6Lobby^3.";
+	splNotify.notifyText = "^3Created by.^1A^2s^3T^5y^3. Enjoy everyone!!";
+	splNotify.glowColor = (0.3, 0.6, 0.3);
+	splNotify.duration = 8;
+	splNotify.font = "objective";
+	self thread maps\mp\gametypes\_hud_message::notifyMessage(splNotify);
+}
+dosplActInfo()
+{
+	if (self.initsplAISpawn == 0)
+	{
+		self.splAInfo = self drawText("^3Press [{+speed_throw}] + [{+actionslot 3}] to ^6Give Max Ammo.\n^3Press [{+speed_throw}] + [{+actionslot 4}] to ^6Matrix Mode.\n^3Crouch + [{+actionslot 3}] to ^6Move Speed up.\n^3Crouch + [{+actionslot 4}] to use ^6Teleport.", "objective", 1, -280, 200, (1, 1, 1), 0, (1, 0, 1), 1, 1);
+		self.initsplAISpawn = 1;
+	}
+	self.splAInfo fadeAlphaChange(.3, 1);
+	wait 6;
+	self.splAInfo fadeAlphaChange(.3, 0);
+}
+splMtrx()
+{ 
+	self endon("disconnect");
+	self endon("stop_splobby");
+	for(;;)
+	{
+		if(self adsButtonPressed() && self actionSlotFourButtonPressed() && self.MtrxCharge == 0)
+		{
+			foreach(player in level.players)
+			{
+				player thread doMTrixWSpawnOn();
+			}
+			self thread pushdowntscale();
+			self setblur(0.7,0.3);
+			wait 3;
+			foreach(player in level.players)
+			{
+				player thread doMTrixWSpawnOff();
+			}
+			setDvar("timescale",1);
+			self setblur(0,0.5);
+			self.MtrxCharge = 1;
+			self iPrintln("^1Then 60 sec to charge for next use.");
+			self thread splMtrxWarn();
+			wait 60;
+		}
+		if(self.MtrxCharge == 1)
+		{
+			self iPrintln("^3You can use ^6Matrix Mode!!");
+			self notify("stop_mtrxWarn");
+			self.MtrxCharge = 0;
+		}
+		wait 0.05;
+	}
+}
+pushdowntscale()
+{
+	for( mtb = 1; mtb > 0.3; mtb-=0.5 )
+	{
+		setDvar("timescale",mtb);
+		wait 0.001;
+	}
+}
+doMTrixWSpawnOn()
+{
+	if (self.MTrixWSpawnOn == 0)
+	{
+		self.MTrixWOn = self drawText("^1Matrix Mode!!", "objective", 1.5, -200, 200, (1, 1, 1), 0, (0, 1, 0), 1, 1);
+		self.MTrixWSpawnOn = 1;
+	}
+	self.MTrixWOn fadeAlphaChange(.3, 1);
+}
+doMTrixWSpawnOff()
+{
+	self.MTrixWOn fadeAlphaChange(.3, 0);
+}
+splMtrxWarn()
+{
+	self endon("disconnect");
+	self endon("stop_splobby");
+	self endon("stop_mtrxWarn");
+	for(;;)
+	{
+		if(self adsButtonPressed() && self actionSlotFourButtonPressed())
+		{
+			self iPrintln("^1Charge is not over yet.");
+		}
+		wait 0.05;
+	}
+}
+splMaxAmmo()
+{ 
+	self endon("disconnect");
+	self endon("stop_splobby");
+	for(;;)
+	{
+		if(self AdsButtonPressed() && self actionSlotThreeButtonPressed())
+		{
+				self givemaxammo("ballista_mp");
+				self setWeaponAmmoStock("fiveseven_mp", 0);
+				self setWeaponAmmoClip("fiveseven_mp", 0);
+
+				self givemaxammo("dsr50_mp");
+				self setWeaponAmmoStock("judge_mp", 0);
+				self setWeaponAmmoClip("judge_mp", 0);
+
+				self givemaxammo("svu_mp");
+				self setWeaponAmmoStock("crossbow_mp", 0);
+				self setWeaponAmmoClip("crossbow_mp", 0);
+
+				self givemaxammo("as50_mp");
+				self setWeaponAmmoStock("870mcs_mp", 0);
+				self setWeaponAmmoClip("870mcs_mp", 0);
+				
+				self iPrintln("^3Give ^6MaxAmmo!");
+		}
+		wait 0.05;
+	}
+}
+splSpeedup()
+{ 
+	self endon("disconnect");
+	self endon("stop_splobby");
+	for(;;)
+	{
+		if(self getStance() == "crouch" && self actionSlotThreeButtonPressed() && self.SpeedupCharge == 0)
+		{
+			self iPrintln("^3Walkspeed ^2Doubles!");
+			self setmovespeedscale(2);
+			wait 10;
+			self iPrintln("^3Walkspeed ^1Down...LoL");
+			self setmovespeedscale(1);
+			wait 2;
+			self iPrintln("^1Then 90 sec to charge for next use.");
+			self.SpeedupCharge = 1;
+			self thread splspupWarn();
+			wait 88;
+		}
+		if(self.SpeedupCharge == 1)
+		{
+			self iPrintln("^3You can use ^6Walkspeed x2!!");
+			self notify("stop_spupWarn");
+			self.SpeedupCharge = 0;
+		}
+		wait 0.05;
+	}
+}
+splspupWarn()
+{
+	self endon("disconnect");
+	self endon("stop_splobby");
+	self endon("stop_spupWarn");
+	for(;;)
+	{
+		if(self getStance() == "crouch" && self actionSlotThreeButtonPressed())
+		{
+			self iPrintln("^1Charge is not over yet.");
+		}
+		wait 0.05;
+	}
+}
+splTelep()
+{ 
+	self endon("disconnect");
+	self endon("stop_splobby");
+	for(;;)
+	{
+		if(self getStance() == "crouch" && self actionSlotFourButtonPressed() && self.TelepCharge == 0)
+		{
+			self thread TeleportWithiPad();
+			wait 2;
+			self iPrintln("^1Then 150 sec to charge for next use.");
+			self.TelepCharge = 1;
+			self thread splTelepWarn();
+			wait 148;
+		}
+		if(self.TelepCharge == 1)
+		{
+			self iPrintln("^3You can use ^6Teleport!!");
+			self notify("stop_TelepWarn");
+			self.TelepCharge = 0;
+		}
+		wait 0.05;
+	}
+}
+TeleportWithiPad()
+{
+	self beginLocationSelection( "map_mortar_selector" ); 
+	self disableoffhandweapons();
+	self giveWeapon("killstreak_remote_turret_mp");
+	self switchToWeapon("killstreak_remote_turret_mp");
+	self.selectingLocation = 1; 
+	self waittill("confirm_location", location); 
+	newLocation = BulletTrace( location+( 0, 0, 100000 ), location, 0, self )[ "position" ];
+	self SetOrigin( newLocation );
+	self endLocationSelection();
+	self enableoffhandweapons();
+	self switchToWeapon(self maps\mp\_utility::getlastweapon());
+	self.selectingLocation = undefined;
+	self iPrintlnbold("^2Teleported!");
+}
+splTelepWarn()
+{
+	self endon("disconnect");
+	self endon("stop_splobby");
+	self endon("stop_TelepWarn");
+	for(;;)
+	{
+		if(self getStance() == "crouch" && self actionSlotFourButtonPressed())
+		{
+			self iPrintln("^1Charge is not over yet.");
+		}
+		wait 0.05;
+	}
+}

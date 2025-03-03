@@ -1,0 +1,384 @@
+initNiconico()
+{
+	if(level.nicommeMode == 0)
+	{
+		level.nicommeMode = 1;
+		foreach(p in level.players)
+		{
+			p thread doNicoMode();
+			p thread callOnText(self.NicoMCOn, "Niconico Comment Mode", "", (1, 1, 1), (0, 1, 0));
+		}
+		self thread MenuClosing();
+		self thread cancelNicomode();
+		self iPrintlnbold("^52525 Comment: ^2On");
+		self iPrintln("^3[{+actionslot 1}] + [{+melee}] to ^1Stop 2525");
+	}
+	else
+	{
+		stopNico();
+	}
+}
+stopNico()
+{
+	level.nicommeMode = 0;
+	foreach(p in level.players)
+	{
+		p notify("stop_nicoMode");
+		p thread deleteComment();
+		p thread deleteComment2();
+		p thread deleteComment3();
+		p thread deleteComment4();
+		p thread deleteComment5();
+		wait 1;		
+		p thread callOffText(self.NicoMCOff, "Niconico Comment Mode", "", (1, 1, 1), (0, 1, 0));
+	}
+	self iPrintlnbold("^52525 Comment: ^1Off");
+}
+doNicoMode()
+{
+	self endon("disconnect");
+	self endon("stop_nicoMode");
+	for(;;)
+	{
+		self spawnComment();
+		wait 0.5;
+		self moveComment();
+		wait 7;
+		self deleteComment5();
+		wait 0.5;
+		self spawnComment2();
+		wait 0.5;
+		self moveComment2();
+		wait 7;
+		self deleteComment();
+		wait 0.5;
+		self spawnComment3();
+		wait 0.5;
+		self moveComment3();
+		wait 7;
+		self deleteComment2();
+		wait 0.5;
+		self spawnComment4();
+		wait 0.5;
+		self moveComment4();
+		wait 7;
+		self deleteComment3();
+		wait 0.5;
+		self spawnComment5();
+		wait 0.5;
+		self moveComment5();
+		wait 7;
+		self deleteComment4();
+		wait 0.5;
+	}
+}
+spawnComment()
+{
+	y = randomIntRange(-30, 450);
+	self.nico1 = self drawText("Yabasugi www", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico2 = self drawText("Nandayo kore", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico3 = self drawText("Sine hacker!", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico4 = self drawText("LoL", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico5 = self drawText("that's excellent Modding (^u^)", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico6 = self drawText("BO2, seiki matu dawa....", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico7 = self drawText("Nani kore w", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico8 = self drawText("Sine kuzu", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico9 = self drawText("wwwwwwwww", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico10 = self drawText("^1T^7wwww^1i^7wwwwww^1-^7wwwww^1t^7wwww^1o^7wwwwwwww", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+}
+spawnComment2()
+{
+	y = randomIntRange(-30, 450);
+	self.nico11 = self drawText("Kitigai zimiteru...", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico12 = self drawText("warota ww", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico13 = self drawText("Yabanai?", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico14 = self drawText("Syasin tottoko w", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico15 = self drawText("nande BAN sarenee no? okasiku ne?", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico16 = self drawText("^1Tuuhou simasuta", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico17 = self drawText("Treyarch sigoto siroyo wwww", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico18 = self drawText("Gaizin kato omottara Nihonjin kayo www", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico19 = self drawText("ma-ta AsTy ka, Korineena aitumo", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico20 = self drawText("^5http://ngumodhaxasty.blog.fc2.com/ ^3<-- Ti-ta- no tamariba", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+}
+spawnComment3()
+{
+	y = randomIntRange(-30, 450);
+	self.nico21 = self drawText("Unnei mou tyotto Ganbatte hosii na", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico22 = self drawText("Zikai saku no AW ni Kitai siyotto", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico23 = self drawText("NEET dakara tte Tyuugakusei ga Tyousi ni Norisugi daro", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico24 = self drawText("BO2 tte kokomade aretennnoka", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico25 = self drawText("ore Ghosts Min dakara Kankei neewa ww", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico26 = self drawText("^6sasuga KusoSute3", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico27 = self drawText("^2Hako O de yatteru Ore ha Katigumi", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico28 = self drawText("tyo wwww Kowasugi wwww", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico29 = self drawText("Buturi Housoku Kowasi sugi daro w", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico30 = self drawText("iyaa, Konna heya Ataritaku nainaa...", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+}
+spawnComment4()
+{
+	y = randomIntRange(-30, 450);
+	self.nico31 = self drawText("^1up Nusi, naze Nukezuni Gannbaru w", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico32 = self drawText("Ima kara BO2 Utte kuruwa", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico33 = self drawText("Kore nara mada MW3 no Toumei Ti-to no houga Masi", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico34 = self drawText("Konnano ni Kateru wake ga nai", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico35 = self drawText("Twitter Senden sitete Kusa haeru", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico36 = self drawText("koitu Baka daro", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico37 = self drawText("^5https://twitter.com/CS_AsTy_ODM ^3twiter mikketa", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico38 = self drawText("konnna koto suru hima arunara chanto Hatarake tteno", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico39 = self drawText("^6Iroiro to Chaos www", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico40 = self drawText("Kore mou Betu Ge- daro", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+}
+spawnComment5()
+{
+	y = randomIntRange(-30, 450);
+	self.nico41 = self drawText("Ningen yamete Tori ni Natteru na", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico42 = self drawText("^2Gamen ga Mozi de Siawase da-", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico43 = self drawText("Mazikiti", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico44 = self drawText("CoD tte ittumo Kakosaku Areru yone", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico45 = self drawText("toriaezu Warui Yume dato Omotte Nemasuka", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico46 = self drawText("kore Yatteru yatu Tanosii nkane", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico47 = self drawText("BO2 de Minecraft Yannayo wwww", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico48 = self drawText("koitu MW2 kara zutto Ti-to Yatteru yona, Yoku Akinai mondane", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico49 = self drawText("^4Mozi no Arasi wwwww", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+	y = randomIntRange(-30, 450);
+	self.nico50 = self drawText("Kimoi", "objective", 1.5, 1050, y, (1, 1, 1), 1, (0, 0, 0), 1, 1);
+}
+moveComment()
+{
+	time = randomIntRange(7, 20);
+	self.nico1 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico2 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico3 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico4 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico5 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico6 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico7 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico8 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico9 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico10 elemMoveX(time, -1150);
+}
+moveComment2()
+{
+	time = randomIntRange(7, 20);
+	self.nico11 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico12 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico13 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico14 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico15 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico16 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico17 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico18 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico19 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico20 elemMoveX(time, -1150);
+}
+moveComment3()
+{
+	time = randomIntRange(7, 20);
+	self.nico21 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico22 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico23 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico24 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico25 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico26 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico27 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico28 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico29 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico30 elemMoveX(time, -1150);
+}
+moveComment4()
+{
+	time = randomIntRange(7, 20);
+	self.nico31 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico32 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico33 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico34 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico35 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico36 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico37 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico38 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico39 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico40 elemMoveX(time, -1150);
+}
+moveComment5()
+{
+	time = randomIntRange(7, 20);
+	self.nico41 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico42 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico43 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico44 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico45 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico46 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico47 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico48 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico49 elemMoveX(time, -1150);
+	time = randomIntRange(7, 20);
+	self.nico50 elemMoveX(time, -1150);
+}
+deleteComment()
+{
+	self.nico1 destroy();
+	self.nico2 destroy();
+	self.nico3 destroy();
+	self.nico4 destroy();
+	self.nico5 destroy();
+	self.nico6 destroy();
+	self.nico7 destroy();
+	self.nico8 destroy();
+	self.nico9 destroy();
+	self.nico10 destroy();
+}
+deleteComment2()
+{
+	self.nico11 destroy();
+	self.nico12 destroy();
+	self.nico13 destroy();
+	self.nico14 destroy();
+	self.nico15 destroy();
+	self.nico16 destroy();
+	self.nico17 destroy();
+	self.nico18 destroy();
+	self.nico19 destroy();
+	self.nico20 destroy();
+}
+deleteComment3()
+{
+	self.nico21 destroy();
+	self.nico22 destroy();
+	self.nico23 destroy();
+	self.nico24 destroy();
+	self.nico25 destroy();
+	self.nico26 destroy();
+	self.nico27 destroy();
+	self.nico28 destroy();
+	self.nico29 destroy();
+	self.nico30 destroy();
+}
+deleteComment4()
+{
+	self.nico31 destroy();
+	self.nico32 destroy();
+	self.nico33 destroy();
+	self.nico34 destroy();
+	self.nico35 destroy();
+	self.nico36 destroy();
+	self.nico37 destroy();
+	self.nico38 destroy();
+	self.nico39 destroy();
+	self.nico40 destroy();
+
+}
+deleteComment5()
+{
+	self.nico41 destroy();
+	self.nico42 destroy();
+	self.nico43 destroy();
+	self.nico44 destroy();
+	self.nico45 destroy();
+	self.nico46 destroy();
+	self.nico47 destroy();
+	self.nico48 destroy();
+	self.nico49 destroy();
+	self.nico50 destroy();
+}
+cancelNicomode()
+{
+	self endon("disconnect");
+	self endon("stop_nicoButton");
+	for(;;)
+	{
+		if(self actionSlotOneButtonPressed() && self meleeButtonPressed())
+		{
+			stopNico();
+			self notify("stop_nicoButton");
+		}
+		wait 0.05;
+	}
+}

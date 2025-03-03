@@ -1,0 +1,331 @@
+AC130()
+{
+	if(self.isAC130 == 0)
+	{
+		if(self.NoticeTextMode == 0)
+			self thread optionCalledMesage("MW2 AC-130 Kill Streak!", 1, "Press [{+actionslot 3}] for AC-130.", (0, 1, 0), 8, 0);
+		else
+			self thread init_NotifySetText(0, 0, "MW2 AC-130 Kill Streak!", (1, 1, 1), 1, (0, 1, 0), 6, 1, "Press [{+actionslot 3}] for AC-130.", (1, 1, 1), 1, (1, 1, 1));
+		self thread Monitor_AC130();
+		self.isAC130 = 1;
+	}
+	else
+		self iPrintln("^1Caution ^7: ^3AC-130 is still unused.");
+}
+Monitor_AC130()
+{
+	self endon("disconnect");
+	self endon("stop_Monitor_AC130");
+	for(;;)
+	{
+		if(self actionSlotThreeButtonPressed())
+		{
+			self.LastLocation_AC130 = self.origin;
+			self.LastWeapon_AC130 = self getCurrentWeapon();
+			self takeWeapon(self.LastWeapon_AC130);
+			wait 0.1;
+			self.LastWeapon2_AC130 = self getCurrentWeapon();
+			self takeWeapon(self.LastWeapon2_AC130);
+			self giveWeapon("killstreak_remote_turret_mp", 0, false);
+			self switchToWeapon("killstreak_remote_turret_mp");
+			wait 1;
+			self.BlackScreen elemFade(0.2, 1);
+			wait 0.2;
+			self disableOffHandWeapons();
+			self takeAllWeapons();
+			self Hide();
+			self enableInvulnerability();
+			self thread init_AC130(1);
+			self notify("stop_Monitor_AC130");
+		}
+		wait 0.05;
+	}
+}
+init_AC130(Notice)
+{
+	if(Notice == 1)
+	{
+		if(level.NoticeMode == 0)
+			self iPrintln("^6AC-130 ^7: [^2Requested^7]");
+		else
+		{
+			if(level.AllNoticeTextMode == 0)
+				self thread optionCalledMesage("AC-130 is Incoming!", 0, "", (0, 1, 0), 6, 1);
+			else
+				self thread init_NotifySetText(1, 1, "AC-130 is Incoming!", (1, 1, 1), 1, (1, 0, 0), 2, 0);
+		}
+	}
+	
+	Center = maps\mp\gametypes\_spawnlogic::findBoxCenter(level.spawnMins, level.spawnMaxs);
+	Object_AC130 = Spawn("script_model", Center);
+	Object_AC130 SetModel("veh_t6_air_v78_vtol_killstreak");
+	Object_AC130.angles = (0, 115, 0);
+	Object_AC130 Hide();
+	Player_AC130 = Spawn("script_model", Center);
+	Player_AC130 SetModel("tag_origin");
+	Player_AC130.angles = (0, 115, 0);
+	Player_AC130 Hide();
+	self thread Move_AC130(Object_AC130);
+	self thread MovePlayer_AC130(Player_AC130);
+	self waittill("end_AC130");
+	Object_AC130 delete();
+	Player_AC130 delete();
+}
+Move_AC130(Object)
+{
+	self endon("disconnect");
+	self endon("stop_AC130");
+	Plane_AC130 = Spawn("script_model", Object getTagOrigin("tag_origin"));
+	Plane_AC130 SetModel("veh_t6_air_v78_vtol_killstreak");
+	Plane_AC130 thread Tag_PlayFX(0, level.fx_cuav_afterburner, 0, "tag_turret", 0.1, 0, 0, 25);
+	Angle = 360; //RandomInt(360)
+	RadiusOffset = 8000; //RandomInt(4000) + 7000
+	xOffset = cos(Angle) * RadiusOffset;
+	yOffset = sin(Angle) * RadiusOffset;
+	zOffset = 5200; //RandomIntRange(5000, 7000)
+	AngleVector = VectorNormalize((xOffset, yOffset, zOffset));
+	AngleVector2 = Vector_Multiply(AngleVector, 7500); //RandomIntRange(8000, 9000)
+	Plane_AC130 LinkTo(Object, "tag_origin", AngleVector2, (0, Angle - 90, 0));
+	for(;;)
+	{
+		Object RotateYaw(-360, 60);
+		wait 60;
+		self notify("end_AC130");
+		Plane_AC130 notify("stop_Tag_PlayFX");
+		Plane_AC130 delete();
+		self notify("stop_AC130");
+	}
+}
+MovePlayer_AC130(Object)
+{
+	self endon("disconnect");
+	self endon("stop_Player_AC130");
+	HidePlayer = Spawn("script_model", Object getTagOrigin("tag_origin"));
+	HidePlayer SetModel("tag_origin");
+	Angle = 360; //RandomInt(360)
+	RadiusOffset = 8100; //RandomInt(4000) + 7000
+	xOffset = cos(Angle) * RadiusOffset;
+	yOffset = sin(Angle) * RadiusOffset;
+	zOffset = 5150; //RandomIntRange(5000, 7000)
+	AngleVector = VectorNormalize((xOffset, yOffset, zOffset));
+	AngleVector2 = Vector_Multiply(AngleVector, 7360); //RandomIntRange(8000, 9000)
+	HidePlayer LinkTo(Object, "tag_origin", AngleVector2, (0, Angle - 90, 0));
+	self.BlackScreen elemFade(0.5, 0);
+	self PlayerLinkTo(HidePlayer, undefined);
+	self thread Weapon_AC130();
+	for(;;)
+	{
+		Object RotateYaw(-360, 60);
+		wait 60;
+		self thread Delete_AC130TargetDesign();
+		HidePlayer delete();
+		self unlink();
+		self.BlackScreen elemFade(0.2, 1);
+		wait 0.2;
+		self.BlackScreen elemFade(0.2, 0);
+		self setOrigin(self.LastLocation_AC130);
+		self enableOffHandWeapons();
+		self thread ProvideWeapon(self.LastWeapon_AC130, 0, 1, 0, "");
+		self thread ProvideWeapon(self.LastWeapon2_AC130, 0, 0, 0, "");
+		self thread ProvideWeapon("knife_mp", 0, 0, 0, "");
+		self Show();
+		self setClientFOV(65);
+		self.isAC130 = 0;
+		self notify("stop_Player_AC130");
+	}
+}
+
+Weapon_AC130()
+{
+	self endon("disconnect");
+	self endon("end_AC130");
+	self.isWeapon_AC130 = 0;
+	self.Max_WeaponAC130 = 70;
+	self.Count_WeaponAC130 = 0;
+	self.Charge_WeaponAC130 = 0;
+	self.SelectWeapon_AC130 = "straferun_gun_mp";
+	self.WaitTime_AC130 = 0.05;
+	self setClientFOV(20);
+	self thread Design25mm_AC130();
+	for(;;)
+	{
+		if(self changeSeatButtonPressed())
+		{
+			self thread Delete_AC130TargetDesign();
+			if(self.isWeapon_AC130 == 0)
+			{
+				self thread Design40mm_AC130();
+				self.SelectWeapon_AC130 = "ai_tank_drone_rocket_mp";
+				self.WaitTime_AC130 = 0.5;
+				self.Max_WeaponAC130 = 10;
+				self.Count_WeaponAC130 = 0;
+				self.Charge_WeaponAC130 = 0;
+				self setClientFOV(35);
+				self.isWeapon_AC130++;
+				wait 0.5;
+			}
+			else if(self.isWeapon_AC130 == 1)
+			{
+				self thread Design105mm_AC130();
+				self.SelectWeapon_AC130 = "remote_missile_bomblet_mp";
+				self.WaitTime_AC130 = 3;
+				self.Max_WeaponAC130 = 1;
+				self.Count_WeaponAC130 = 0;
+				self.Charge_WeaponAC130 = 0;
+				self setClientFOV(50);
+				self.isWeapon_AC130++;
+				wait 0.5;
+			}
+			else if(self.isWeapon_AC130 == 2)
+			{
+				self thread Design105mm_AC130();
+				self.SelectWeapon_AC130 = "remote_missile_bomblet_mp";
+				self.WaitTime_AC130 = 0.05;
+				self.Max_WeaponAC130 = 99999999;
+				self.Count_WeaponAC130 = 0;
+				self.Charge_WeaponAC130 = 0;
+				self setClientFOV(50);
+				self.isWeapon_AC130++;
+				wait 0.5;
+			}
+			else if(self.isWeapon_AC130 == 3)
+			{
+				self thread Design25mm_AC130();
+				self.SelectWeapon_AC130 = "straferun_gun_mp";
+				self.WaitTime_AC130 = 0.05;
+				self.Max_WeaponAC130 = 70;
+				self.Count_WeaponAC130 = 0;
+				self.Charge_WeaponAC130 = 0;
+				self setClientFOV(20);
+				self.isWeapon_AC130 = 0;
+				wait 0.5;
+			}
+		}
+		if(self attackButtonPressed())
+		{
+			if(self.Max_WeaponAC130 >= self.Count_WeaponAC130 && self.Charge_WeaponAC130 == 0)
+			{
+				MagicBullet(self.SelectWeapon_AC130, self getEye(), self TraceBullet(1000000), self);
+				self.Count_WeaponAC130++;
+				wait self.WaitTime_AC130;
+				if(self.Max_WeaponAC130 == self.Count_WeaponAC130)
+					self.Charge_WeaponAC130 = 1;
+			}
+			else
+			{
+				self.Count_WeaponAC130--;
+				wait self.WaitTime_AC130;
+				if(self.Count_WeaponAC130 == 0)
+					self.Charge_WeaponAC130 = 0;
+			}
+		}
+		wait 0.05;
+	}
+}
+
+Delete_AC130TargetDesign()
+{
+	self.AC130_25mm destroy();
+	self.AC130_25mm_2 destroy();
+	self.AC130_25mm_3 destroy();
+	self.AC130_25mm_4 destroy();
+	self.AC130_25mm_5 destroy();
+	self.AC130_25mm_6 destroy();
+	self.AC130_25mm_7 destroy();
+	self.AC130_25mm_8 destroy();
+	self.AC130_25mm_9 destroy();
+	self.AC130_25mm_10 destroy();
+	self.AC130_25mm_11 destroy();
+	self.AC130_45mm destroy();
+	self.AC130_45mm_1 destroy();
+	self.AC130_45mm_2 destroy();
+	self.AC130_45mm_3 destroy();
+	self.AC130_45mm_4 destroy();
+	self.AC130_45mm_5 destroy();
+	self.AC130_45mm_6 destroy();
+	self.AC130_45mm_7 destroy();
+	self.AC130_45mm_8 destroy();
+	self.AC130_45mm_9 destroy();
+	self.AC130_45mm_10 destroy();
+	self.AC130_45mm_11 destroy();
+	self.AC130_45mm_12 destroy();
+	self.AC130_45mm_13 destroy();
+	self.AC130_45mm_14 destroy();
+	self.AC130_45mm_15 destroy();
+	self.AC130_45mm_16 destroy();
+	self.AC130_45mm_17 destroy();
+	self.AC130_45mm_18 destroy();
+	self.AC130_45mm_19 destroy();
+	self.AC130_105mm destroy();
+	self.AC130_105mm_1 destroy();
+	self.AC130_105mm_2 destroy();
+	self.AC130_105mm_3 destroy();
+	self.AC130_105mm_4 destroy();
+	self.AC130_105mm_5 destroy();
+	self.AC130_105mm_6 destroy();
+	self.AC130_105mm_7 destroy();
+	self.AC130_105mm_8 destroy();
+	self.AC130_105mm_9 destroy();
+	self.AC130_105mm_10 destroy();
+	self.AC130_105mm_11 destroy();
+	self.AC130_105mm_12 destroy();
+	self.AC130_105mm_13 destroy();
+	self.AC130_105mm_14 destroy();
+	self.AC130_105mm_15 destroy();
+}
+Design25mm_AC130()
+{
+	self.AC130_25mm = self createRectangle("CENTER", "CENTER", -35, -50, "white", 30, 1, (1, 1, 1), 1, 1);
+	self.AC130_25mm_2 = self createRectangle("CENTER", "CENTER", -50, -35, "white", 1, 30, (1, 1, 1), 1, 1);
+	self.AC130_25mm_3 = self createRectangle("CENTER", "CENTER", 35, -50, "white", 30, 1, (1, 1, 1), 1, 1);
+	self.AC130_25mm_4 = self createRectangle("CENTER", "CENTER", 50, -35, "white", 1, 30, (1, 1, 1), 1, 1);
+	self.AC130_25mm_5 = self createRectangle("CENTER", "CENTER", -35, 50, "white", 30, 1, (1, 1, 1), 1, 1);
+	self.AC130_25mm_6 = self createRectangle("CENTER", "CENTER", -50, 35, "white", 1, 30, (1, 1, 1), 1, 1);
+	self.AC130_25mm_7 = self createRectangle("CENTER", "CENTER", 35, 50, "white", 30, 1, (1, 1, 1), 1, 1);
+	self.AC130_25mm_8 = self createRectangle("CENTER", "CENTER", 50, 35, "white", 1, 30, (1, 1, 1), 1, 1);
+	self.AC130_25mm_9 = self createRectangle("CENTER", "CENTER", -10, 0, "white", 15, 1, (1, 1, 1), 1, 1);
+	self.AC130_25mm_10 = self createRectangle("CENTER", "CENTER", 10, 0, "white", 15, 1, (1, 1, 1), 1, 1);
+	self.AC130_25mm_11 = self createRectangle("CENTER", "CENTER", 0, 20, "white", 1, 35, (1, 1, 1), 1, 1);
+}
+Design40mm_AC130()
+{
+	self.AC130_45mm = self createRectangle("CENTER", "CENTER", -75, 0,"white", 120, 1, (1, 1, 1), 1, 1);
+	self.AC130_45mm_1 = self createRectangle("CENTER", "CENTER", 75, 0, "white", 120, 1, (1, 1, 1), 1, 1);
+	self.AC130_45mm_2 = self createRectangle("CENTER", "CENTER", 0, -75, "white", 1, 120, (1, 1, 1), 1, 1);
+	self.AC130_45mm_3 = self createRectangle("CENTER", "CENTER", 0, 75,"white", 1, 120, (1, 1, 1), 1, 1);
+	self.AC130_45mm_4 = self createRectangle("CENTER", "CENTER", -135, 0,"white", 2, 20, (1, 1, 1), 1, 1);
+	self.AC130_45mm_5 = self createRectangle("CENTER", "CENTER", 135, 0,"white", 2, 20, (1, 1, 1), 1, 1);
+	self.AC130_45mm_6 = self createRectangle("CENTER", "CENTER", 0, -135,"white", 20, 2, (1, 1, 1), 1, 1);
+	self.AC130_45mm_7 = self createRectangle("CENTER", "CENTER", 0, 135,"white", 20, 2, (1, 1, 1), 1, 1);
+	self.AC130_45mm_8 = self createRectangle("CENTER", "CENTER", -35, 0,"white", 1, 10, (1, 1, 1), 1, 1);
+	self.AC130_45mm_9 = self createRectangle("CENTER", "CENTER", 35, 0,"white", 1, 10, (1, 1, 1), 1, 1);
+	self.AC130_45mm_10 = self createRectangle("CENTER", "CENTER", 0, -35,"white", 10, 1, (1, 1, 1), 1, 1);
+	self.AC130_45mm_11 = self createRectangle("CENTER", "CENTER", 0, 35,"white", 10, 1, (1, 1, 1), 1, 1);
+	self.AC130_45mm_12 = self createRectangle("CENTER", "CENTER", -68, 0,"white", 1, 10, (1, 1, 1), 1, 1);
+	self.AC130_45mm_13 = self createRectangle("CENTER", "CENTER", 68, 0,"white", 1, 10, (1, 1, 1), 1, 1);
+	self.AC130_45mm_14 = self createRectangle("CENTER", "CENTER", 0, -68,"white", 10, 1, (1, 1, 1), 1, 1);
+	self.AC130_45mm_15 = self createRectangle("CENTER", "CENTER", 0, 68,"white", 10, 1, (1, 1, 1), 1, 1);
+	self.AC130_45mm_16 = self createRectangle("CENTER", "CENTER", -101, 0,"white", 1, 10, (1, 1, 1), 1, 1);
+	self.AC130_45mm_17 = self createRectangle("CENTER", "CENTER", 101, 0,"white", 1, 10, (1, 1, 1), 1, 1);
+	self.AC130_45mm_18 = self createRectangle("CENTER", "CENTER", 0, -101,"white", 10, 1, (1, 1, 1), 1, 1);
+	self.AC130_45mm_19 = self createRectangle("CENTER", "CENTER", 0, 101,"white", 10, 1, (1, 1, 1), 1, 1);
+}
+Design105mm_AC130()
+{
+	self.AC130_105mm = self createRectangle("CENTER", "CENTER", 25, 0,"white", 2, 33, (1, 1, 1), 1, 1); 
+	self.AC130_105mm_1 = self createRectangle("CENTER", "CENTER", -25, 0,"white", 2, 33, (1, 1, 1), 1, 1); 
+	self.AC130_105mm_2 = self createRectangle("CENTER", "CENTER", 0, -16,"white", 50, 2, (1, 1, 1), 1, 1);
+	self.AC130_105mm_3 = self createRectangle("CENTER", "CENTER", 0, 16,"white", 50, 2, (1, 1, 1), 1, 1);
+	self.AC130_105mm_4 = self createRectangle("CENTER", "CENTER", 0, -44,"white", 2, 57, (1, 1, 1), 1, 1);
+	self.AC130_105mm_5 = self createRectangle("CENTER", "CENTER", 0, 44,"white", 2, 57, (1, 1, 1), 1, 1);
+	self.AC130_105mm_6 = self createRectangle("CENTER", "CENTER", -53, 0,"white", 57, 2, (1, 1, 1), 1, 1);
+	self.AC130_105mm_7 = self createRectangle("CENTER", "CENTER", 53, 0,"white", 57, 2, (1, 1, 1), 1, 1);
+	self.AC130_105mm_8 = self createRectangle("CENTER", "CENTER", -155, -122,"white", 2, 21, (1, 1, 1), 1, 1);
+	self.AC130_105mm_9 = self createRectangle("CENTER", "CENTER", -155, 122,"white", 2, 21, (1, 1, 1), 1, 1);
+	self.AC130_105mm_10 = self createRectangle("CENTER", "CENTER", 155, 122,"white", 2, 21, (1, 1, 1), 1, 1);
+	self.AC130_105mm_11 = self createRectangle("CENTER", "CENTER", 155, -122,"white", 2, 21, (1, 1, 1), 1, 1);
+	self.AC130_105mm_12 = self createRectangle("CENTER", "CENTER", -145, -132,"white", 21, 2, (1, 1, 1), 1, 1);
+	self.AC130_105mm_13 = self createRectangle("CENTER", "CENTER", 145, -132,"white", 21, 2, (1, 1, 1), 1, 1);
+	self.AC130_105mm_14 = self createRectangle("CENTER", "CENTER", -145, 132,"white", 21, 2, (1, 1, 1), 1, 1);
+	self.AC130_105mm_15 = self createRectangle("CENTER", "CENTER", 145, 132,"white", 21, 2, (1, 1, 1), 1, 1);
+}

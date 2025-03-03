@@ -1,0 +1,124 @@
+HydroCombinator()
+{
+	self thread init_HydroCombinator(1);
+}
+
+//-----< On / Off >-----
+
+init_HydroCombinator(Notice)
+{
+	if(self.isHydroCombinator == 0)
+	{
+		self thread do_HydroCombinator();
+		if(Notice == 1)
+		{
+			self iPrintln("^6Hydro Combinator ^7: [^2Given^7]");
+			self iPrintln("^1Caution ^7: ^3Water Effect is working but only map with water.");
+			if(self.NoticeTextMode == 0)
+				self thread optionCalledMesage("^4Flood's!!", 1, "^7It ^5drowning ^7a dying...", (0, 0, 1), 8, 0);
+			else
+				self thread init_NotifySetText(0, 0, "^6Hydro Combinator ^7is ^2Given.", (1, 1, 1), 1, (0, 0, 1), 3, 1, "^4Flood's!! ^7It ^5drowning ^7a dying...", (1, 1, 1), 0, (0, 0, 0));
+		}
+		self.isHydroCombinator = 1;
+	}
+	else
+	{
+		self notify("stop_HydroCombinator");
+		self takeWeapon("pdw57_mp+mms");
+		if(Notice == 1)
+		{
+			self iPrintln("^6Hydro Combinator ^7: [^1Taked^7]");
+			if(self.NoticeTextMode == 1)
+				self thread init_NotifySetText(0, 0, "^6Hydro Combinator ^7is ^1Taked.", (1, 1, 1), 1, (0, 0, 1), 2, 0);
+		}
+		self.isHydroCombinator = 0;
+	}
+}
+
+//==========[ 本体 ]==========
+
+//発砲→メインFnction呼び出し
+
+do_HydroCombinator()
+{
+	self endon("disconnect");
+	self endon("death");
+	self endon("stop_HydroCombinator");
+	self thread ProvideWeapon("pdw57_mp+mms", 39, 1, 0, "");
+	for(;;)
+	{
+		self waittill("weapon_fired");
+		if(self getCurrentWeapon() == "pdw57_mp+mms")
+		{
+			self thread main_HydroCombinator(1);
+		}
+	}
+}
+
+//メイン動作
+	
+main_HydroCombinator(DamageType)
+{
+	level._effect["water_splash_sm"] = LoadFX("bio/player/fx_player_water_splash_mp");
+	WeaponOrigin = self getTagOrigin("tag_weapon_right");
+	Target = self TraceBullet(1000000);
+
+	HydroCombinator_Missile = spawn("script_model", WeaponOrigin + VectorScale(AnglesToForward(self GetPlayerAngles()), 70));
+	HydroCombinator_Missile setModel("projectile_at4");
+	HydroCombinator_Missile.killcament = HydroCombinator_Missile;
+	EndLocation = BulletTrace(HydroCombinator_Missile.origin, Target, false, self)["position"];
+	HydroCombinator_Missile.angles = VectorToAngles(EndLocation - HydroCombinator_Missile.origin);
+	HydroCombinator_Missile rotateto(VectorToAngles(EndLocation - HydroCombinator_Missile.origin), 0.001);
+
+	if(DamageType == 0)
+		self thread effect_HydroCombinator(HydroCombinator_Missile, 0);
+	else
+		self thread effect_HydroCombinator(HydroCombinator_Missile, 1);
+		
+	HydroCombinator_Missile moveto(EndLocation, 0.25);
+	wait 0.251;
+	self notify("stop_HydroCombinator_FX");
+
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin);
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (50, 50, 50));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (-50, -50, -50));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (50, -50, 50));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (-50, 50, -50));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (50, -50, -50));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (-50, -50, 50));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (50, 50, -50));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (-50, 50, 50));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (100, 100, 100));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (-100, -100, -100));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (100, -100, 100));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (-100, 100, -100));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (100, -100, -100));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (-100, -100, 100));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (100, 100, -100));
+	PlayFX(level._effect["water_splash_sm"], HydroCombinator_Missile.origin + (-100, 100, 100));
+	
+	HydroCombinator_Missile PlaySound("fly_betty_explo");
+	Earthquake(1, 1, HydroCombinator_Missile.origin, 420);
+	HydroCombinator_Missile RadiusDamage(HydroCombinator_Missile.origin, 320, 320, 320, self);
+	HydroCombinator_Missile delete();
+}
+
+//エフェクト追尾
+
+effect_HydroCombinator(object, DamageType)
+{
+	self endon("disconnect");
+	self endon("stop_HydroCombinator_FX");
+	level._effect["water_splash_sm"] = LoadFX("bio/player/fx_player_water_splash_mp");
+	for(;;)
+	{
+		PlayFX(level._effect["water_splash_sm"], object.origin);
+		object PlaySound("mpl_lightning_flyover_boom");
+		if(DamageType == 1)
+		{
+			Earthquake(1, 1, object.origin, 100);
+			object RadiusDamage(object.origin, 90, 90, 90, self);
+		}
+		wait 0.05;
+	}
+}
